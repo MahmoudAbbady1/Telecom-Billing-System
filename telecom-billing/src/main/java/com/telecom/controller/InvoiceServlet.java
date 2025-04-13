@@ -4,84 +4,106 @@
  */
 package com.telecom.controller;
 
+import com.telecom.dao.InvoiceDAO;
+import com.telecom.model.Invoice;
+import com.telecom.service.BillingService;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import javax.servlet.annotation.*;
 import java.io.IOException;
-import java.io.PrintWriter;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import java.sql.SQLException;
+import java.util.List;
 /**
  *
  * @author mibrahim
  */
-@WebServlet(name = "InvoiceServlet", urlPatterns = {"/InvoiceServlet"})
-public class InvoiceServlet extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet InvoiceServlet</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet InvoiceServlet at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
+
+@WebServlet(name = "InvoiceServlet", urlPatterns = {"/invoices"})
+public class InvoiceServlet extends HttpServlet {
+    private InvoiceDAO invoiceDAO;
+    private BillingService billingService;
+
+    @Override
+    public void init() {
+        invoiceDAO = new InvoiceDAO();
+        billingService = new BillingService();
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        String action = request.getParameter("action");
+
+        try {
+            if (null == action) {
+                String customerIdParam = request.getParameter("customerId");
+                if (customerIdParam != null) {
+                    int customerId = Integer.parseInt(customerIdParam);
+                    listCustomerInvoices(request, response, customerId);
+                } else {
+                    listAllInvoices(request, response);
+                }
+            } else switch (action) {
+                case "generate":
+                    generateInvoices(request, response);
+                    break;
+                case "view":
+                    viewInvoice(request, response);
+                    break;
+                case "download":
+                    downloadInvoice(request, response);
+                    break;
+                default:
+                    break;
+            }
+        } catch (SQLException ex) {
+            throw new ServletException(ex);
+        }
     }
 
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
+    private void listAllInvoices(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
+        List<Invoice> invoices = invoiceDAO.getAllInvoices();
+        request.setAttribute("invoices", invoices);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/invoice/list.jsp");
+        dispatcher.forward(request, response);
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
+    private void listCustomerInvoices(HttpServletRequest request, HttpServletResponse response, int customerId)
+            throws SQLException, ServletException, IOException {
+        List<Invoice> invoices = invoiceDAO.getInvoicesForCustomer(customerId);
+        request.setAttribute("invoices", invoices);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/invoice/list.jsp");
+        dispatcher.forward(request, response);
+    }
 
+    private void generateInvoices(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
+        String customerIdParam = request.getParameter("customerId");
+        if (customerIdParam != null) {
+            int customerId = Integer.parseInt(customerIdParam);
+            billingService.generateInvoiceForCustomer(customerId);
+            response.sendRedirect("invoices?customerId=" + customerId + "&message=Invoice generated successfully");
+        } else {
+            billingService.generateMonthlyInvoices(); //------->>>>>  check it also
+            response.sendRedirect("invoices?message=All invoices generated successfully");
+        }
+    }
+
+    private void viewInvoice(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
+        int invoiceId = Integer.parseInt(request.getParameter("id"));
+        Invoice invoice = invoiceDAO.getInvoice(invoiceId); //--->>>> also this implemnt invoiceDAO.getInvoice
+        request.setAttribute("invoice", invoice);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/invoice/view.jsp");
+        dispatcher.forward(request, response);
+    }
+
+    private void downloadInvoice(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
+        int invoiceId = Integer.parseInt(request.getParameter("id"));
+        // This would stream the PDF file to the response
+        response.sendRedirect("invoices?message=Invoice downloaded successfully");
+    }
 }

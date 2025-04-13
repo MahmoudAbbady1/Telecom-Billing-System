@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -9,71 +10,86 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <junit.version>5.8.2</junit.version>
-        <servlet.version>4.0.1</servlet.version>
-        <jstl.version>1.2</jstl.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <jakarta.servlet.version>5.0.0</jakarta.servlet.version>
+        <jstl.version>2.0.0</jstl.version>
         <postgresql.version>42.5.4</postgresql.version>
         <itextpdf.version>5.5.13.3</itextpdf.version>
+        <log4j.version>2.20.0</log4j.version>
+        <junit.version>5.8.2</junit.version>
+        <bootstrap.version>4.3.1</bootstrap.version>
+        <datatables.version>1.10.20</datatables.version>
     </properties>
 
     <dependencies>
-        <!-- Servlet API -->
+        <!-- Jakarta EE (for Tomcat 10+) -->
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>${servlet.version}</version>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>${jakarta.servlet.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet.jsp</groupId>
+            <artifactId>jakarta.servlet.jsp-api</artifactId>
+            <version>3.0.0</version>
             <scope>provided</scope>
         </dependency>
 
-        <!-- JSP & JSTL -->
+        <!-- JSTL -->
         <dependency>
-            <groupId>javax.servlet.jsp</groupId>
-            <artifactId>javax.servlet.jsp-api</artifactId>
-            <version>2.3.3</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>jstl</artifactId>
+            <groupId>org.glassfish.web</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
             <version>${jstl.version}</version>
         </dependency>
 
-        <!-- PostgreSQL JDBC Driver -->
+        <!-- Database -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>${postgresql.version}</version>
         </dependency>
 
-        <!-- Apache Commons (File Upload, DB Utils) -->
-        <dependency>
-            <groupId>commons-fileupload</groupId>
-            <artifactId>commons-fileupload</artifactId>
-            <version>1.5</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-dbutils</groupId>
-            <artifactId>commons-dbutils</artifactId>
-            <version>1.7</version>
-        </dependency>
-
-        <!-- iTextPDF (For Invoice Generation) -->
+        <!-- PDF Generation -->
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itextpdf</artifactId>
             <version>${itextpdf.version}</version>
         </dependency>
 
-        <!-- Log4j (Logging) -->
+        <!-- Logging -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.20.0</version>
+            <version>${log4j.version}</version>
         </dependency>
 
-        <!-- JUnit (Testing) -->
+        <!-- Security -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.70</version>
+        </dependency>
+
+        <!-- Web Dependencies -->
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>${bootstrap.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery</artifactId>
+            <version>3.6.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>datatables</artifactId>
+            <version>${datatables.version}</version>
+        </dependency>
+
+        <!-- Testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -81,17 +97,29 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.wso2.am.choreo.extensions</groupId>
-            <artifactId>org.wso2.am.choreo.extensions.oauth</artifactId>
-            <version>1.1.49</version>
-            <type>bundle</type>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>4.5.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+            <version>8.0</version>
+            <type>jar</type>
         </dependency>
     </dependencies>
 
     <build>
         <finalName>telecom-billing</finalName>
         <plugins>
-            <!-- Maven Compiler Plugin -->
+            <!-- Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -102,11 +130,43 @@
                 </configuration>
             </plugin>
 
-            <!-- Maven War Plugin (For JSP Deployment) -->
+            <!-- War Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <version>3.3.2</version>
+                <configuration>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                    <webResources>
+                        <resource>
+                            <directory>src/main/webapp</directory>
+                            <includes>
+                                <include>**/*.properties</include>
+                                <include>**/*.xml</include>
+                                <include>**/*.css</include>
+                                <include>**/*.js</include>
+                                <include>**/*.jsp</include>
+                            </includes>
+                        </resource>
+                    </webResources>
+                </configuration>
+            </plugin>
+
+            <!-- Resources Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+            <!-- Surefire Plugin (for tests) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0-M7</version>
             </plugin>
         </plugins>
     </build>

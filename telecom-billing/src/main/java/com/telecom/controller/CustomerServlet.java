@@ -4,84 +4,142 @@
  */
 package com.telecom.controller;
 
+import com.telecom.dao.CustomerDAO;
+import com.telecom.model.Customer;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import javax.servlet.annotation.*;
 import java.io.IOException;
-import java.io.PrintWriter;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.sql.SQLException;
+import java.util.List;
 
 /**
  *
  * @author mibrahim
  */
-@WebServlet(name = "CustomerServlet", urlPatterns = {"/CustomerServlet"})
-public class CustomerServlet extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+
+
+
+@WebServlet(name = "CustomerServlet", urlPatterns = {"/customers"})
+public class CustomerServlet extends HttpServlet {
+    private CustomerDAO customerDAO;
+
+    @Override
+    public void init() {
+        customerDAO = new CustomerDAO();
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet CustomerServlet</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet CustomerServlet at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
+        String action = request.getParameter("action");
+
+        try {
+            if (action == null) {
+                listCustomers(request, response);
+            } else {
+                switch (action) {
+                    case "new":
+                        showNewForm(request, response);
+                        break;
+                    case "edit":
+                        showEditForm(request, response);
+                        break;
+                    case "delete":
+                        deleteCustomer(request, response);
+                        break;
+                    case "search":
+                        searchCustomers(request, response);
+                        break;
+                    default:
+                        listCustomers(request, response);
+                        break;
+                }
+            }
+        } catch (SQLException ex) {
+            throw new ServletException(ex);
         }
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
-    }
-
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        String action = request.getParameter("action");
+
+        try {
+            if (action == null) {
+                insertCustomer(request, response);
+            } else if (action.equals("update")) {
+                updateCustomer(request, response);
+            }
+        } catch (SQLException ex) {
+            throw new ServletException(ex);
+        }
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
+    private void listCustomers(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
+        List<Customer> customers = customerDAO.getAllCustomers();
+        request.setAttribute("customers", customers);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/customer/list.jsp");
+        dispatcher.forward(request, response);
+    }
 
+    private void showNewForm(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/customer/form.jsp");
+        dispatcher.forward(request, response);
+    }
+
+    private void showEditForm(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
+        int id = Integer.parseInt(request.getParameter("id"));
+        Customer customer = customerDAO.getCustomer(id);
+        request.setAttribute("customer", customer);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/customer/form.jsp");
+        dispatcher.forward(request, response);
+    }
+
+    private void insertCustomer(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
+        String name = request.getParameter("name");
+        String phone = request.getParameter("phone");
+        String email = request.getParameter("email");
+        String address = request.getParameter("address");
+
+        Customer newCustomer = new Customer(name, phone, email, address);
+        customerDAO.addCustomer(newCustomer);
+        response.sendRedirect("customers");
+    }
+
+    private void updateCustomer(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
+        int id = Integer.parseInt(request.getParameter("id"));
+        String name = request.getParameter("name");
+        String phone = request.getParameter("phone");
+        String email = request.getParameter("email");
+        String address = request.getParameter("address");
+        String status = request.getParameter("status");
+
+        Customer customer = new Customer(name, phone, email, address);
+        customer.setCustomerId(id);
+        customer.setStatus(status);
+        customerDAO.updateCustomer(customer);
+        response.sendRedirect("customers");
+    }
+
+    private void deleteCustomer(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
+        int id = Integer.parseInt(request.getParameter("id"));
+        customerDAO.deleteCustomer(id);
+        response.sendRedirect("customers");
+    }
+
+    private void searchCustomers(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
+        String searchTerm = request.getParameter("searchTerm");
+        List<Customer> customers = customerDAO.searchCustomers(searchTerm); // ->>>> dont forget to implemrnt searchCustomers in customerDAO
+        request.setAttribute("customers", customers);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/customer/list.jsp");
+        dispatcher.forward(request, response);
+    }
 }

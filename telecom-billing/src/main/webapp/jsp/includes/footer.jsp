@@ -1,17 +1,19 @@
-<%-- 
-    Document   : footer
-    Created on : Apr 12, 2025, 3:40:22 PM
-    Author     : mibrahim
---%>
+        </div> <!-- Close container div -->
+        
+        <footer class="footer">
+            <div class="container text-center">
+                <span class="text-muted">Telecom Billing System - T3mya Egypt &copy; 2025</span>
+            </div>
+        </footer>
+                    </main>
 
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>JSP Page</title>
-    </head>
-    <body>
-        <h1>Hello World!</h1>
+
+        <!-- JavaScript Libraries -->
+        <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+        <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
+        <script src="${pageContext.request.contextPath}/js/scripts.js"></script>
     </body>
 </html>

@@ -4,84 +4,119 @@
  */
 package com.telecom.controller;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.telecom.dao.CDRDAO;
+import com.telecom.model.CDR;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import javax.servlet.annotation.*;
+import javax.servlet.annotation.MultipartConfig;
+import java.io.*;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.List;
 /**
  *
  * @author mibrahim
  */
-@WebServlet(name = "CDRServlet", urlPatterns = {"/CDRServlet"})
-public class CDRServlet extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+
+
+@WebServlet(name = "CDRServlet", urlPatterns = {"/cdrs"})
+@MultipartConfig(fileSizeThreshold = 1024 * 1024,
+                 maxFileSize = 1024 * 1024 * 5,
+                 maxRequestSize = 1024 * 1024 * 5 * 5)
+public class CDRServlet extends HttpServlet {
+    private CDRDAO cdrDAO;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    @Override
+    public void init() {
+        cdrDAO = new CDRDAO();
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet CDRServlet</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet CDRServlet at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
+        String action = request.getParameter("action");
+
+        try {
+            if (action == null) {
+                listCDRs(request, response);
+            } else if (action.equals("process")) {
+                processCDRs(request, response);
+            }
+        } catch (SQLException ex) {
+            throw new ServletException(ex);
         }
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
-    }
-
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        String action = request.getParameter("action");
+
+        try {
+            if (action == null) {
+                uploadCDRFile(request, response);
+            } else if (action.equals("manual")) {
+                addManualCDR(request, response);
+            }
+        } catch (SQLException | ParseException ex) {
+            throw new ServletException(ex);
+        }
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
+    private void listCDRs(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
+        List<CDR> cdrs = cdrDAO.getRecentCDRs(100);
+        request.setAttribute("cdrs", cdrs);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/cdr/list.jsp");
+        dispatcher.forward(request, response);
+    }
 
+    private void uploadCDRFile(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException, ServletException, ParseException {
+        Part filePart = request.getPart("cdrFile");
+        InputStream fileContent = filePart.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(fileContent));
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] parts = line.split(",");
+            if (parts.length == 6) {
+                CDR cdr = new CDR();
+                cdr.setDialA(parts[0].trim());
+                cdr.setDialB(parts[1].trim());
+                cdr.setServiceId(Integer.parseInt(parts[2].trim()));
+                cdr.setQuantity(Double.parseDouble(parts[3].trim()));
+                cdr.setStartTime(new Timestamp(dateFormat.parse(parts[4].trim()).getTime()));
+                cdr.setExternalCharges(Double.parseDouble(parts[5].trim()));
+                
+                cdrDAO.addCDR(cdr);
+            }
+        }
+        reader.close();
+        response.sendRedirect("cdrs?message=CDR file uploaded successfully");
+    }
+
+    private void addManualCDR(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException, ParseException {
+        String dialA = request.getParameter("dialA");
+        String dialB = request.getParameter("dialB");
+        int serviceId = Integer.parseInt(request.getParameter("serviceId"));
+        double quantity = Double.parseDouble(request.getParameter("quantity"));
+        Timestamp startTime = new Timestamp(dateFormat.parse(request.getParameter("startTime")).getTime());
+        double externalCharges = Double.parseDouble(request.getParameter("externalCharges"));
+
+        CDR cdr = new CDR(dialA, dialB, serviceId, quantity, startTime);
+        cdr.setExternalCharges(externalCharges);
+        cdrDAO.addCDR(cdr);
+        response.sendRedirect("cdrs?message=Manual CDR added successfully");
+    }
+
+    private void processCDRs(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
+        // This would typically call a billing service to process CDRs
+        response.sendRedirect("cdrs?message=CDRs processed successfully");
+    }
 }

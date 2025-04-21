@@ -10,7 +10,7 @@ public class ServiceDAO {
     public List<Service> getAllServices() throws SQLException {
         List<Service> services = new ArrayList<>();
         String sql = "SELECT * FROM services";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -24,7 +24,7 @@ public class ServiceDAO {
 
     public Service getService(int serviceId) throws SQLException {
         String sql = "SELECT * FROM services WHERE service_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -43,7 +43,7 @@ public class ServiceDAO {
         String sql = "SELECT s.* FROM services s " +
                      "JOIN rate_plan_services rps ON s.service_id = rps.service_id " +
                      "WHERE rps.plan_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -62,7 +62,7 @@ public class ServiceDAO {
         String sql = "SELECT s.* FROM services s " +
                      "JOIN customer_services cs ON s.service_id = cs.service_id " +
                      "WHERE cs.customer_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -81,7 +81,7 @@ public class ServiceDAO {
         String sql = "SELECT s.* FROM services s " +
                      "JOIN customer_services cs ON s.service_id = cs.service_id " +
                      "WHERE cs.customer_id = ? AND cs.is_recurring = true";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -98,7 +98,7 @@ public class ServiceDAO {
     public boolean addService(Service service) throws SQLException {
         String sql = "INSERT INTO services (service_name, service_type, rate_per_unit, unit_description, is_recurring, monthly_fee) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
@@ -126,7 +126,7 @@ public class ServiceDAO {
     public boolean updateService(Service service) throws SQLException {
         String sql = "UPDATE services SET service_name = ?, service_type = ?, rate_per_unit = ?, " +
                      "unit_description = ?, is_recurring = ?, monthly_fee = ? WHERE service_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -144,7 +144,7 @@ public class ServiceDAO {
 
     public boolean deleteService(int serviceId) throws SQLException {
         String sql = "DELETE FROM services WHERE service_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -157,7 +157,7 @@ public class ServiceDAO {
         throws SQLException {
         String sql = "INSERT INTO customer_services (customer_id, service_id, is_recurring, monthly_fee) " +
                      "VALUES (?, ?, ?, ?)";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -171,7 +171,7 @@ public class ServiceDAO {
 
     public boolean removeCustomerService(int customerId, int serviceId) throws SQLException {
         String sql = "DELETE FROM customer_services WHERE customer_id = ? AND service_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -183,7 +183,7 @@ public class ServiceDAO {
 
     public boolean addServiceToRatePlan(int planId, int serviceId) throws SQLException {
         String sql = "INSERT INTO rate_plan_services (plan_id, service_id) VALUES (?, ?)";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -195,7 +195,7 @@ public class ServiceDAO {
 
     public boolean removeServiceFromRatePlan(int planId, int serviceId) throws SQLException {
         String sql = "DELETE FROM rate_plan_services WHERE plan_id = ? AND service_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             

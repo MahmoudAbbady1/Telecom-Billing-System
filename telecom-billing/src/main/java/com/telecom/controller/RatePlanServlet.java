@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
-@WebServlet(name = "RatePlanServlet", urlPatterns = {"/rateplans"})
 public class RatePlanServlet extends HttpServlet {
     private RatePlanDAO ratePlanDAO;
 

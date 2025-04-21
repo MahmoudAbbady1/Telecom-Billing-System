@@ -21,7 +21,6 @@ import java.util.List;
 
 
 
-@WebServlet(name = "CustomerServlet", urlPatterns = {"/customers"})
 public class CustomerServlet extends HttpServlet {
     private CustomerDAO customerDAO;
 

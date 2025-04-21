@@ -19,7 +19,7 @@ public class RatePlanDAO {
     public List<RatePlan> getAllRatePlans() throws SQLException {
         List<RatePlan> ratePlans = new ArrayList<>();
         String sql = "SELECT * FROM rate_plans";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -33,7 +33,7 @@ public class RatePlanDAO {
 
     public RatePlan getRatePlan(int planId) throws SQLException {
         String sql = "SELECT * FROM rate_plans WHERE plan_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -49,7 +49,7 @@ public class RatePlanDAO {
 
     public boolean addRatePlan(RatePlan ratePlan) throws SQLException {
         String sql = "INSERT INTO rate_plans (plan_name, description, base_price) VALUES (?, ?, ?)";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
@@ -73,7 +73,7 @@ public class RatePlanDAO {
 
     public boolean updateRatePlan(RatePlan ratePlan) throws SQLException {
         String sql = "UPDATE rate_plans SET plan_name = ?, description = ?, base_price = ? WHERE plan_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -88,7 +88,7 @@ public class RatePlanDAO {
 
     public boolean deleteRatePlan(int planId) throws SQLException {
         String sql = "DELETE FROM rate_plans WHERE plan_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             

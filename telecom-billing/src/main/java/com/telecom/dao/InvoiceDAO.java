@@ -21,6 +21,7 @@ public class InvoiceDAO {
         List<Invoice> invoices = new ArrayList<>();
         String sql = "SELECT * FROM invoices WHERE customer_id = ? ORDER BY invoice_date DESC";
         
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -37,7 +38,7 @@ public class InvoiceDAO {
     public int addInvoice(Invoice invoice) throws SQLException {
         String sql = "INSERT INTO invoices (customer_id, invoice_date, due_date, subtotal, tax, total, status) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
@@ -67,7 +68,7 @@ public class InvoiceDAO {
     public void addInvoiceItem(InvoiceItem item) throws SQLException {
         String sql = "INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, amount) " +
                      "VALUES (?, ?, ?, ?, ?)";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -84,7 +85,7 @@ public class InvoiceDAO {
     public List<InvoiceItem> getInvoiceItems(int invoiceId) throws SQLException {
         List<InvoiceItem> items = new ArrayList<>();
         String sql = "SELECT * FROM invoice_items WHERE invoice_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             

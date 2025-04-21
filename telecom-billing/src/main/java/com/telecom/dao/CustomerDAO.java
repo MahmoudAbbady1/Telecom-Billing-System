@@ -19,7 +19,7 @@ public class CustomerDAO {
     public List<Customer> getAllCustomers() throws SQLException {
         List<Customer> customers = new ArrayList<>();
         String sql = "SELECT * FROM customers";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -33,7 +33,7 @@ public class CustomerDAO {
 
     public Customer getCustomer(int customerId) throws SQLException {
         String sql = "SELECT * FROM customers WHERE customer_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -49,7 +49,7 @@ public class CustomerDAO {
 
     public boolean addCustomer(Customer customer) throws SQLException {
         String sql = "INSERT INTO customers (name, phone, email, address, status) VALUES (?, ?, ?, ?, ?)";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
@@ -75,7 +75,7 @@ public class CustomerDAO {
 
     public boolean updateCustomer(Customer customer) throws SQLException {
         String sql = "UPDATE customers SET name = ?, phone = ?, email = ?, address = ?, status = ? WHERE customer_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -92,7 +92,7 @@ public class CustomerDAO {
 
     public boolean deleteCustomer(int customerId) throws SQLException {
         String sql = "DELETE FROM customers WHERE customer_id = ?";
-        
+        DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -118,6 +118,8 @@ public class CustomerDAO {
     
     public boolean updateCustomerRatePlan(int customerId, int planId) throws SQLException {
     String sql = "UPDATE customers SET plan_id = ? WHERE customer_id = ?";
+    
+    DBConnection DBConnection = new DBConnection();
     try (Connection conn = DBConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
         stmt.setInt(1, planId);

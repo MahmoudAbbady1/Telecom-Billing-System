@@ -29,7 +29,7 @@
         <!-- Navigation -->
         <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--secondary-color);">
             <div class="container">
-                <a class="navbar-brand fw-bold" href="#">
+                <a class="navbar-brand fw-bold" href="../DashBoard/Dashboard.jsp">
                     <i class="fas fa-satellite-dish me-2"></i>T3mya -Egypt
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">

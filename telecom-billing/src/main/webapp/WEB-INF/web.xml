@@ -86,7 +86,7 @@
     </session-config>
 
     <!--filter-->
-
+<!--
     <filter>
         <filter-name>AuthenticationFilter</filter-name>
         <filter-class>com.telecom.filter.AuthenticationFilter</filter-class>
@@ -96,7 +96,7 @@
         <url-pattern>/jsp/*</url-pattern>
         <url-pattern>/protected/*</url-pattern>
         <url-pattern>/secured/*</url-pattern>
-    </filter-mapping>
+    </filter-mapping>-->
 
 
 

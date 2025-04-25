@@ -2,13 +2,11 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.telecom</groupId>
     <artifactId>telecom-billing</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>war</packaging>
-
     <name>telecom-billing</name>
 
     <properties>
@@ -17,9 +15,25 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jersey.version>2.35</jersey.version>
     </properties>
+<repositories>
+    <repository>
+        <id>apache-releases</id>
+        <url>https://repository.apache.org/content/repositories/releases/</url>
+    </repository>
+    <repository>
+        <id>apache-snapshots</id>
+        <url>https://repository.apache.org/snapshots</url>
+        <releases>
+            <enabled>false</enabled>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
 
     <dependencies>
-        <!-- Servlet API (Tomcat provides this) -->
+        <!-- Servlet API -->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
@@ -58,8 +72,6 @@
             <version>42.7.3</version>
         </dependency>
 
-
-
         <!-- WebJars for Frontend Dependencies -->
         <dependency>
             <groupId>org.webjars</groupId>
@@ -96,6 +108,19 @@
             <version>4.5.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>pub.ihub.module</groupId>
+            <artifactId>ihub-core</artifactId>
+            <version>0.1.2</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>space.divergence</groupId>
+            <artifactId>hdfs-logger_2.11</artifactId>
+            <version>0.0.1</version>
+            <type>jar</type>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -131,5 +156,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

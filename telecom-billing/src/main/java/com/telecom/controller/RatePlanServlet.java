@@ -2,119 +2,149 @@ package com.telecom.controller;
 
 import com.telecom.dao.RatePlanDAO;
 import com.telecom.model.RatePlan;
-import javax.servlet.*;
-import javax.servlet.http.*;
-import javax.servlet.annotation.*;
-import java.io.IOException;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class RatePlanServlet extends HttpServlet {
-    private RatePlanDAO ratePlanDAO;
+@Path("/rate-plans")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class RatePlanServlet {
+    private static final Logger LOGGER = Logger.getLogger(RatePlanServlet.class.getName());
+    private final RatePlanDAO ratePlanDAO;
 
-    @Override
-    public void init() {
-        ratePlanDAO = new RatePlanDAO();
+    public RatePlanServlet() {
+        this.ratePlanDAO = new RatePlanDAO();
+        LOGGER.info("RatePlanServlet initialized");
     }
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        String action = request.getParameter("action");
-
+    @GET
+    public Response getAllRatePlans() {
         try {
-            if (action == null) {
-                listRatePlans(request, response);
-            } else {
-                switch (action) {
-                    case "new":
-                        showNewForm(request, response);
-                        break;
-                    case "edit":
-                        showEditForm(request, response);
-                        break;
-                    case "delete":
-                        deleteRatePlan(request, response);
-                        break;
-                    default:
-                        listRatePlans(request, response);
-                        break;
+            LOGGER.info("Fetching all rate plans");
+            List<RatePlan> ratePlans = ratePlanDAO.getAllRatePlans();
+            LOGGER.info("Successfully retrieved " + ratePlans.size() + " rate plans");
+            return Response.ok(ratePlans).build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error retrieving rate plans", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error retrieving rate plans: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @GET
+    @Path("/{id}")
+    public Response getRatePlanById(@PathParam("id") int id) {
+        try {
+            LOGGER.log(Level.INFO, "Fetching rate plan with ID: {0}", id);
+            RatePlan ratePlan = ratePlanDAO.getRatePlanById(id);
+            
+            if (ratePlan != null) {
+                if (ratePlan.getServices() == null) {
+                    LOGGER.log(Level.INFO, "Initializing empty services list for plan ID: {0}", id);
+                    ratePlan.setServices(new ArrayList<>());
                 }
+                LOGGER.log(Level.INFO, "Successfully retrieved rate plan ID: {0}", id);
+                return Response.ok(ratePlan).build();
+            } else {
+                LOGGER.log(Level.WARNING, "Rate plan not found with ID: {0}", id);
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("Rate plan not found with id: " + id)
+                        .build();
             }
-        } catch (SQLException ex) {
-            throw new ServletException(ex);
+        } catch (SQLException e) {
+            String errorMsg = "Database error retrieving rate plan: " + e.getMessage();
+            LOGGER.log(Level.SEVERE, errorMsg, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(errorMsg)
+                    .build();
+        } catch (Exception e) {
+            String errorMsg = "Unexpected error retrieving rate plan: " + e.getMessage();
+            LOGGER.log(Level.SEVERE, errorMsg, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(errorMsg)
+                    .build();
         }
     }
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        String action = request.getParameter("action");
-
+    @POST
+    public Response createRatePlan(RatePlan ratePlan) {
         try {
-            if (action == null) {
-                insertRatePlan(request, response);
-            } else if (action.equals("update")) {
-                updateRatePlan(request, response);
-            }
-        } catch (SQLException ex) {
-            throw new ServletException(ex);
+            LOGGER.log(Level.INFO, "Creating new rate plan: {0}", ratePlan);
+            LOGGER.log(Level.INFO, "Services count: {0}", 
+                (ratePlan.getServices() != null ? ratePlan.getServices().size() : 0));
+
+            int planId = ratePlanDAO.addRatePlan(ratePlan);
+            ratePlan.setPlanId(planId);
+            
+            LOGGER.log(Level.INFO, "Successfully created rate plan with ID: {0}", planId);
+            return Response.status(Response.Status.CREATED)
+                    .entity(ratePlan)
+                    .build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error creating rate plan", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error creating rate plan: " + e.getMessage())
+                    .build();
         }
     }
 
-    private void listRatePlans(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, ServletException, IOException {
-        List<RatePlan> ratePlans = ratePlanDAO.getAllRatePlans();
-        request.setAttribute("ratePlans", ratePlans);
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/rateplan/list.jsp");
-        dispatcher.forward(request, response);
+    @PUT
+    @Path("/{id}")
+    public Response updateRatePlan(@PathParam("id") int id, RatePlan ratePlan) {
+        try {
+            LOGGER.log(Level.INFO, "Updating rate plan ID: {0}", id);
+            ratePlan.setPlanId(id);
+            ratePlanDAO.updateRatePlan(ratePlan);
+            
+            LOGGER.log(Level.INFO, "Successfully updated rate plan ID: {0}", id);
+            return Response.ok(ratePlan).build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error updating rate plan ID: " + id, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error updating rate plan: " + e.getMessage())
+                    .build();
+        }
     }
 
-    private void showNewForm(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/rateplan/form.jsp");
-        dispatcher.forward(request, response);
+    @DELETE
+    @Path("/{id}")
+    public Response deleteRatePlan(@PathParam("id") int id) {
+        try {
+            LOGGER.log(Level.INFO, "Deleting rate plan ID: {0}", id);
+            ratePlanDAO.deleteRatePlan(id);
+            
+            LOGGER.log(Level.INFO, "Successfully deleted rate plan ID: {0}", id);
+            return Response.noContent().build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error deleting rate plan ID: " + id, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error deleting rate plan: " + e.getMessage())
+                    .build();
+        }
     }
 
-    private void showEditForm(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, ServletException, IOException {
-        int id = Integer.parseInt(request.getParameter("id"));
-        RatePlan ratePlan = ratePlanDAO.getRatePlan(id);
-        request.setAttribute("ratePlan", ratePlan);
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/rateplan/form.jsp");
-        dispatcher.forward(request, response);
-    }
-
-    private void insertRatePlan(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, IOException {
-        String planName = request.getParameter("planName");
-        String description = request.getParameter("description");
-        double basePrice = Double.parseDouble(request.getParameter("basePrice"));
-        boolean isActive = request.getParameter("isActive") != null;
-
-        RatePlan newRatePlan = new RatePlan(planName, description, basePrice);
-        newRatePlan.setActive(isActive);
-        ratePlanDAO.addRatePlan(newRatePlan);
-        response.sendRedirect("rateplans");
-    }
-
-    private void updateRatePlan(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, IOException {
-        int id = Integer.parseInt(request.getParameter("id"));
-        String planName = request.getParameter("planName");
-        String description = request.getParameter("description");
-        double basePrice = Double.parseDouble(request.getParameter("basePrice"));
-        boolean isActive = request.getParameter("isActive") != null;
-
-        RatePlan ratePlan = new RatePlan(planName, description, basePrice);
-        ratePlan.setPlanId(id);
-        ratePlan.setActive(isActive);
-        ratePlanDAO.updateRatePlan(ratePlan);
-        response.sendRedirect("rateplans");
-    }
-
-    private void deleteRatePlan(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, IOException {
-        int id = Integer.parseInt(request.getParameter("id"));
-        ratePlanDAO.deleteRatePlan(id);
-        response.sendRedirect("rateplans");
+    @GET
+    @Path("/counts")
+    public Response getRatePlanCounts() {
+        try {
+            LOGGER.info("Fetching rate plan counts");
+            Map<String, Integer> counts = ratePlanDAO.getRatePlanCounts();
+            
+            LOGGER.info("Successfully retrieved rate plan counts");
+            return Response.ok(counts).build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error retrieving rate plan counts", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error retrieving rate plan counts: " + e.getMessage())
+                    .build();
+        }
     }
 }

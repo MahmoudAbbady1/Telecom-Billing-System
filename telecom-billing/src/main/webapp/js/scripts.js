@@ -44,7 +44,9 @@ $(document).ready(function() {
 
 // Helper function for formatting numbers
 function formatCurrency(amount) {
-    return '$' + parseFloat(amount).toFixed(2).replace(/\d(?=(\d{3})+\./g, '$&,');
+    
+    const pattern = /\d(?=(\d{3})+\./g;
+    return '$' + parseFloat(amount).toFixed(2).replace(pattern, '$&,');
 }
 
 // PDF Download Handler

@@ -1,8 +1,10 @@
 package com.telecom.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 
 public class ServicePackage {
+
     private int serviceId;
     private String serviceName;
     private String serviceType;
@@ -11,15 +13,18 @@ public class ServicePackage {
     private BigDecimal ratePerUnit;
     private String unitDescription;
     private Integer validityDays;
-    private boolean isActive;
+    @JsonProperty("is_free_unit")
+    private boolean is_free_unit;
+    @JsonProperty("isFreeUnit")
+    private boolean isFreeUnit;
 
     // Constructors
     public ServicePackage() {
     }
 
-    public ServicePackage(int serviceId, String serviceName, String serviceType, String serviceNetworkZone, 
-                        int quota, BigDecimal ratePerUnit, String unitDescription, 
-                        Integer validityDays, boolean isActive) {
+    public ServicePackage(int serviceId, String serviceName, String serviceType, String serviceNetworkZone,
+            int quota, BigDecimal ratePerUnit, String unitDescription,
+            Integer validityDays, boolean is_free_unit) {
         this.serviceId = serviceId;
         this.serviceName = serviceName;
         this.serviceType = serviceType;
@@ -28,7 +33,7 @@ public class ServicePackage {
         this.ratePerUnit = ratePerUnit;
         this.unitDescription = unitDescription;
         this.validityDays = validityDays;
-        this.isActive = isActive;
+        this.is_free_unit = is_free_unit;
     }
 
     // Getters and Setters
@@ -96,26 +101,34 @@ public class ServicePackage {
         this.validityDays = validityDays;
     }
 
-    public boolean isActive() {
-        return isActive;
+    public boolean is_free_unit() {
+        return is_free_unit;
     }
 
-    public void setActive(boolean active) {
-        isActive = active;
+    public void set_is_free_unit(boolean is_free_unit) {
+        this.is_free_unit = is_free_unit;
+    }
+
+    public boolean isFreeUnit() {
+        return isFreeUnit;
+    }
+
+    public void setFreeUnit(boolean freeUnit) {
+        isFreeUnit = freeUnit;
     }
 
     @Override
     public String toString() {
-        return "ServicePackage{" +
-                "serviceId=" + serviceId +
-                ", serviceName='" + serviceName + '\'' +
-                ", serviceType='" + serviceType + '\'' +
-                ", serviceNetworkZone='" + serviceNetworkZone + '\'' +
-                ", quota=" + quota +
-                ", ratePerUnit=" + ratePerUnit +
-                ", unitDescription='" + unitDescription + '\'' +
-                ", validityDays=" + validityDays +
-                ", isActive=" + isActive +
-                '}';
+        return "ServicePackage{"
+                + "serviceId=" + serviceId
+                + ", serviceName='" + serviceName + '\''
+                + ", serviceType='" + serviceType + '\''
+                + ", serviceNetworkZone='" + serviceNetworkZone + '\''
+                + ", quota=" + quota
+                + ", ratePerUnit=" + ratePerUnit
+                + ", unitDescription='" + unitDescription + '\''
+                + ", validityDays=" + validityDays
+                + ", is_free_unit=" + is_free_unit
+                + '}';
     }
 }

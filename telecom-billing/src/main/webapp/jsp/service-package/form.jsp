@@ -42,7 +42,6 @@
                             <option value="VOICE">Voice</option>
                             <option value="SMS">SMS</option>
                             <option value="DATA">Data</option>
-                            <option value="VAS">Value Added Service</option>
                         </select>
                         <div class="invalid-feedback">Please select a package type.</div>
                     </div>
@@ -54,7 +53,6 @@
                         <select class="form-control" id="serviceNetworkZone" name="serviceNetworkZone" required>
                             <option value="">Select Zone</option>
                             <option value="ON_NET">On-Net</option>
-                            <option value="OFF_NET">Off-Net</option>
                             <option value="ROAMING">Roaming</option>
                             <option value="CROSS_NET">Cross-Net</option>
                         </select>
@@ -98,6 +96,14 @@
                         <small class="form-text text-muted">Leave empty if no expiration</small>
                     </div>
                 </div>
+
+                <div class="col-md-12">
+                    <div class="form-group mb-25 form-check">
+                        <input type="checkbox" class="form-check-input" id="isFreeUnit" name="is_free_unit">
+                        <label class="form-check-label" for="isFreeUnit">Is Free Unit</label>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -134,9 +140,10 @@
                 serviceType: $('#serviceType').val(),
                 serviceNetworkZone: $('#serviceNetworkZone').val(),
                 quota: parseInt($('#quota').val()),
-                ratePerUnit: new BigDecimal($('#ratePerUnit').val()).setScale(4, RoundingMode.HALF_UP),
+                ratePerUnit: $('#ratePerUnit').val(), // Send as string, let Java convert
                 unitDescription: $('#unitDescription').val() || null,
-                validityDays: $('#validityDays').val() ? parseInt($('#validityDays').val()) : null
+                validityDays: $('#validityDays').val() ? parseInt($('#validityDays').val()) : null,
+                is_free_unit: $('#isFreeUnit').is(':checked') // Match Java field name exactly
             };
 
             const method = packageId ? 'PUT' : 'POST';

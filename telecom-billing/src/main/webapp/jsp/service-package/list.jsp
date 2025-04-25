@@ -93,36 +93,12 @@
         </table>
     </div>
 </div>
-<style>
-    .dashboard-card {
-        border-radius: 10px;
-        transition: all 0.3s ease;
-        border: none;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
 
-    .dashboard-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .quick-stats .card-icon {
-        font-size: 1.5rem;
-        color: #5e72e4;
-    }
-
-    .quick-stats h3 {
-        font-weight: 600;
-        color: #2d3748;
-    }
-
-    .quick-stats h6 {
-        font-size: 0.875rem;
-    }
-</style>
 
 <script>
-$(document).ready(function() {
+    
+    
+    $(document).ready(function() {
     // Load package counts
     loadPackageCounts();
     
@@ -142,9 +118,7 @@ function loadPackageCounts() {
             $('#voiceCount').text(data.VOICE || 0);
             $('#smsCount').text(data.SMS || 0);
             $('#dataCount').text(data.DATA || 0);
-            
-            // You can add VAS count if needed
-            // $('#vasCount').text(data.VAS || 0);
+
         },
         error: function(xhr) {
             console.error('Error loading package counts:', xhr);
@@ -153,9 +127,6 @@ function loadPackageCounts() {
     });
 }
 
-// Keep your existing helper functions (getAuthToken, showAlert, etc.)
-</script>
-<script>
     $(document).ready(function () {
         // Initialize DataTable with AJAX
         var table = $('#packagesTable').DataTable({

@@ -144,9 +144,6 @@
                                             <button type="submit" class="btn btn-primary">Login</button>
                                         </div>
                                     </form>
-                                    <div class="text-center mt-3">
-                                        <a href="#">Forgot password?</a>
-                                    </div>
                                 </div>
                             </div>
                         </div>

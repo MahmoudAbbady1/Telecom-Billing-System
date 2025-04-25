@@ -19,8 +19,8 @@ public class CDRDAO {
     public List<CDR> getRecentCDRs(int limit) throws SQLException {
         List<CDR> cdrs = new ArrayList<>();
         String sql = "SELECT * FROM cdr_records ORDER BY start_time DESC LIMIT ?";
-        
-        try (Connection conn = DBConnection.getConnection();
+        DBConnection dbConnection = new DBConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, limit);
@@ -39,7 +39,8 @@ public class CDRDAO {
                      "JOIN customer_services cs ON c.service_id = cs.service_id " +
                      "WHERE cs.customer_id = ? AND c.processed = false";
         
-        try (Connection conn = DBConnection.getConnection();
+        DBConnection dbConnection = new DBConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, customerId);
@@ -55,8 +56,8 @@ public class CDRDAO {
     public boolean addCDR(CDR cdr) throws SQLException {
         String sql = "INSERT INTO cdr_records (dial_a, dial_b, service_id, quantity, start_time, external_charges) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
-        
-        try (Connection conn = DBConnection.getConnection();
+        DBConnection dbConnection = new DBConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
             stmt.setString(1, cdr.getDialA());
@@ -82,8 +83,8 @@ public class CDRDAO {
 
     public boolean markAsProcessed(int cdrId) throws SQLException {
         String sql = "UPDATE cdr_records SET processed = true WHERE cdr_id = ?";
-        
-        try (Connection conn = DBConnection.getConnection();
+        DBConnection dbConnection = new DBConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, cdrId);

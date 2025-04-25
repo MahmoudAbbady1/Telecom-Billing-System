@@ -8,7 +8,6 @@ import com.telecom.dao.CDRDAO;
 import com.telecom.model.CDR;
 import javax.servlet.*;
 import javax.servlet.http.*;
-import javax.servlet.annotation.*;
 import javax.servlet.annotation.MultipartConfig;
 import java.io.*;
 import java.sql.SQLException;
@@ -16,18 +15,17 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
+
 /**
  *
  * @author mibrahim
  */
 
-
-
-@WebServlet(name = "CDRServlet", urlPatterns = {"/cdrs"})
 @MultipartConfig(fileSizeThreshold = 1024 * 1024,
-                 maxFileSize = 1024 * 1024 * 5,
-                 maxRequestSize = 1024 * 1024 * 5 * 5)
+        maxFileSize = 1024 * 1024 * 5,
+        maxRequestSize = 1024 * 1024 * 5 * 5)
 public class CDRServlet extends HttpServlet {
+
     private CDRDAO cdrDAO;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -91,7 +89,7 @@ public class CDRServlet extends HttpServlet {
                 cdr.setQuantity(Double.parseDouble(parts[3].trim()));
                 cdr.setStartTime(new Timestamp(dateFormat.parse(parts[4].trim()).getTime()));
                 cdr.setExternalCharges(Double.parseDouble(parts[5].trim()));
-                
+
                 cdrDAO.addCDR(cdr);
             }
         }

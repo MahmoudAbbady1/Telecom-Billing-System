@@ -4,7 +4,7 @@
 <!-- Welcome Header -->
 <div class="welcome-hero mb-4 rounded-3">
     <div class="container-fluid py-5">
-        <h1 class="display-5 fw-bold">Welcome back, ${username}!</h1>
+        <h1 class="display-5 fw-bold">Welcome back, Mahmoud Ibrahim</h1>
         <p class="col-md-8 fs-4">Here's what's happening with your telecom billing system today.</p>
     </div>
 </div>
@@ -89,7 +89,7 @@
                         </button>
                     </a>
                     
-                    <a href="../SP/list.jsp" class="btn-outline-primary">
+                    <a href="../service-package/form.jsp" class="btn-outline-primary">
                         <button class="btn btn-outline-primary">
                             <i class="fas fa-chart-pie me-2"></i>New Service Package
                         </button>
@@ -190,7 +190,7 @@
 
         const welcomeHeader = document.querySelector('.welcome-hero h1');
         if (welcomeHeader) {
-            welcomeHeader.textContent = `${greeting}, ${welcomeHeader.textContent.split(',')[1]}`;
+            welcomeHeader.textContent = `${greeting}, "Mahmoud Ibrahim;
                     }
                 });
 </script>

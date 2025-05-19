@@ -13,11 +13,11 @@ import java.util.logging.Logger;
 public class ServicePackageDAO {
 
     private static final Logger LOGGER = Logger.getLogger(ServicePackageDAO.class.getName());
+    DBConnection DBConnection = new DBConnection();
 
-    // Get all service packages
     public List<ServicePackage> getAllServicePackages() throws SQLException {
         List<ServicePackage> packages = new ArrayList<>();
-        String sql = "SELECT * FROM service_packages  ORDER BY service_id ";
+        String sql = "SELECT * FROM service_package ORDER BY service_id";
         DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
@@ -31,9 +31,24 @@ public class ServicePackageDAO {
         return packages;
     }
 
-    // Get service package by ID
+    public List<ServicePackage> getFreeUnitOptions() throws SQLException {
+        List<ServicePackage> freeUnits = new ArrayList<>();
+        String sql = "SELECT * FROM service_package WHERE is_free_unite = 't' ORDER BY service_name";
+
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                freeUnits.add(extractServicePackageFromResultSet(rs));
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting free unit options", e);
+            throw e;
+        }
+        return freeUnits;
+    }
+
     public ServicePackage getServicePackageById(int serviceId) throws SQLException {
-        String sql = "SELECT * FROM service_packages WHERE service_id = ?";
+        String sql = "SELECT * FROM service_package WHERE service_id = ?";
         DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -51,9 +66,9 @@ public class ServicePackageDAO {
     }
 
     public void addServicePackage(ServicePackage servicePackage) throws SQLException {
-        String sql = "INSERT INTO service_packages (service_name, service_type, service_network_zone, "
-                + "quota, rate_per_unit, unit_description, validity_days, is_free_unit) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO service_package (service_name, service_type, service_network_zone, "
+                + "qouta, unit_description, is_free_unite, free_unit_monthly_fee) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -61,17 +76,10 @@ public class ServicePackageDAO {
             stmt.setString(1, servicePackage.getServiceName());
             stmt.setString(2, servicePackage.getServiceType());
             stmt.setString(3, servicePackage.getServiceNetworkZone());
-            stmt.setInt(4, servicePackage.getQuota());
-            stmt.setBigDecimal(5, servicePackage.getRatePerUnit());
-            stmt.setString(6, servicePackage.getUnitDescription());
-
-            if (servicePackage.getValidityDays() != null) {
-                stmt.setInt(7, servicePackage.getValidityDays());
-            } else {
-                stmt.setNull(7, Types.INTEGER);
-            }
-
-            stmt.setBoolean(8, servicePackage.is_free_unit());
+            stmt.setInt(4, servicePackage.getQouta());
+            stmt.setString(5, servicePackage.getUnitDescription());
+            stmt.setBoolean(6, servicePackage.isFreeUnite());
+            stmt.setBigDecimal(7, servicePackage.getFreeUnitMonthlyFee());
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -85,58 +93,34 @@ public class ServicePackageDAO {
             }
         }
     }
-// Remove the setServicePackageParameters method and update the update method
 
     public void updateServicePackage(ServicePackage servicePackage) throws SQLException {
-        String sql = "UPDATE service_packages SET service_name = ?, service_type = ?, "
-                + "service_network_zone = ?, quota = ?, rate_per_unit = ?, "
-                + "unit_description = ?, validity_days = ?, is_free_unit = ? "
+        String sql = "UPDATE service_package SET service_name = ?, service_type = ?, "
+                + "service_network_zone = ?, qouta = ?, unit_description = ?, "
+                + "is_free_unite = ?, free_unit_monthly_fee = ? "
                 + "WHERE service_id = ?";
 
         DBConnection DBConnection = new DBConnection();
-
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            // Set parameters
             stmt.setString(1, servicePackage.getServiceName());
             stmt.setString(2, servicePackage.getServiceType());
             stmt.setString(3, servicePackage.getServiceNetworkZone());
-            stmt.setInt(4, servicePackage.getQuota());
-            stmt.setBigDecimal(5, servicePackage.getRatePerUnit());
-            stmt.setString(6, servicePackage.getUnitDescription());
+            stmt.setInt(4, servicePackage.getQouta());
+            stmt.setString(5, servicePackage.getUnitDescription());
+            stmt.setBoolean(6, servicePackage.isFreeUnite());
+            stmt.setBigDecimal(7, servicePackage.getFreeUnitMonthlyFee());
+            stmt.setInt(8, servicePackage.getServiceId());
 
-            // Handle nullable validityDays
-            if (servicePackage.getValidityDays() != null) {
-                stmt.setInt(7, servicePackage.getValidityDays());
-            } else {
-                stmt.setNull(7, Types.INTEGER);
-            }
-
-            stmt.setBoolean(8, servicePackage.is_free_unit());
-            stmt.setInt(9, servicePackage.getServiceId());
-
-            // Execute update
             int affectedRows = stmt.executeUpdate();
-
             if (affectedRows == 0) {
-                String errorMsg = "No service package found with ID: " + servicePackage.getServiceId();
-                LOGGER.log(Level.WARNING, errorMsg);
-                throw new SQLException(errorMsg);
+                throw new SQLException("No service package found with ID: " + servicePackage.getServiceId());
             }
-
-            LOGGER.log(Level.INFO, "Successfully updated service package ID: {0}",
-                    servicePackage.getServiceId());
-
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error updating service package ID: "
-                    + servicePackage.getServiceId(), e);
-            throw e;
         }
     }
 
-    // Delete service package
     public void deleteServicePackage(int serviceId) throws SQLException {
-        String sql = "DELETE FROM service_packages WHERE service_id = ?";
+        String sql = "DELETE FROM service_package WHERE service_id = ?";
         DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -145,15 +129,12 @@ public class ServicePackageDAO {
             if (affectedRows == 0) {
                 throw new SQLException("Deleting service package failed, no rows affected.");
             }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error deleting service package ID: " + serviceId, e);
-            throw e;
         }
     }
 
     public Map<String, Integer> getServicePackageCountsByType() throws SQLException {
         Map<String, Integer> counts = new HashMap<>();
-        String sql = "SELECT service_type, COUNT(*) as count FROM service_packages  GROUP BY service_type";
+        String sql = "SELECT service_type, COUNT(*) as count FROM service_package GROUP BY service_type";
         DBConnection DBConnection = new DBConnection();
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
@@ -162,8 +143,7 @@ public class ServicePackageDAO {
             }
         }
 
-        sql = "SELECT COUNT(*) as total FROM service_packages ";
-
+        sql = "SELECT COUNT(*) as total FROM service_package";
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
             if (rs.next()) {
@@ -174,47 +154,17 @@ public class ServicePackageDAO {
         return counts;
     }
 
-    // Helper method to extract ServicePackage from ResultSet
-    private ServicePackage extractServicePackageFromResultSet(ResultSet rs) throws SQLException {
+private ServicePackage extractServicePackageFromResultSet(ResultSet rs) throws SQLException {
         ServicePackage servicePackage = new ServicePackage();
         servicePackage.setServiceId(rs.getInt("service_id"));
         servicePackage.setServiceName(rs.getString("service_name"));
         servicePackage.setServiceType(rs.getString("service_type"));
         servicePackage.setServiceNetworkZone(rs.getString("service_network_zone"));
-        servicePackage.setQuota(rs.getInt("quota"));
-        servicePackage.setRatePerUnit(rs.getBigDecimal("rate_per_unit"));
+        servicePackage.setQouta(rs.getInt("qouta"));
         servicePackage.setUnitDescription(rs.getString("unit_description"));
-
-        int validityDays = rs.getInt("validity_days");
-        String freeUnitValue = rs.getString("is_free_unit");
-        boolean isFreeUnit = "t".equalsIgnoreCase(freeUnitValue)
-                || "true".equalsIgnoreCase(freeUnitValue)
-                || "1".equals(freeUnitValue)
-                || (rs.getBoolean("is_free_unit") && !"f".equalsIgnoreCase(freeUnitValue));
-
-        servicePackage.setFreeUnit(isFreeUnit);
-        servicePackage.setValidityDays(rs.wasNull() ? null : validityDays);
-
+        servicePackage.setFreeUnite(rs.getString("is_free_unite").equals("t"));
+        servicePackage.setFreeUnitMonthlyFee(rs.getBigDecimal("free_unit_monthly_fee"));
+        servicePackage.setCreatedAt(rs.getTimestamp("created_at"));
         return servicePackage;
     }
-
-    // Helper method to set PreparedStatement parameters
-    private void setServicePackageParameters(PreparedStatement stmt, ServicePackage servicePackage)
-            throws SQLException {
-        stmt.setString(1, servicePackage.getServiceName());
-        stmt.setString(2, servicePackage.getServiceType());
-        stmt.setString(3, servicePackage.getServiceNetworkZone());
-        stmt.setInt(4, servicePackage.getQuota());
-        stmt.setBigDecimal(5, servicePackage.getRatePerUnit());
-        stmt.setString(6, servicePackage.getUnitDescription());
-        stmt.setBoolean(8, servicePackage.is_free_unit());
-
-        if (servicePackage.getValidityDays() != null) {
-            stmt.setInt(7, servicePackage.getValidityDays());
-        } else {
-            stmt.setNull(7, Types.INTEGER);
-        }
-
-    }
-
 }

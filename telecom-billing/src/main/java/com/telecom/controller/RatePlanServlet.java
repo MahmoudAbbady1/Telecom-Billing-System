@@ -1,16 +1,18 @@
 package com.telecom.controller;
 
 import com.telecom.dao.RatePlanDAO;
+import com.telecom.dao.ServicePackageDAO;
 import com.telecom.model.RatePlan;
+import com.telecom.model.ServicePackage;
+
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Path("/rate-plans")
 @Produces(MediaType.APPLICATION_JSON)
@@ -18,24 +20,21 @@ import java.util.logging.Logger;
 public class RatePlanServlet {
     private static final Logger LOGGER = Logger.getLogger(RatePlanServlet.class.getName());
     private final RatePlanDAO ratePlanDAO;
+    private final ServicePackageDAO servicePackageDAO;
 
     public RatePlanServlet() {
         this.ratePlanDAO = new RatePlanDAO();
-        LOGGER.info("RatePlanServlet initialized");
+        this.servicePackageDAO = new ServicePackageDAO();
     }
 
     @GET
     public Response getAllRatePlans() {
         try {
-            LOGGER.info("Fetching all rate plans");
-            List<RatePlan> ratePlans = ratePlanDAO.getAllRatePlans();
-            LOGGER.info("Successfully retrieved " + ratePlans.size() + " rate plans");
+            List<RatePlan> ratePlans = ratePlanDAO.getAllRatePlansWithServices();
             return Response.ok(ratePlans).build();
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error retrieving rate plans", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Error retrieving rate plans: " + e.getMessage())
-                    .build();
+            return errorResponse("Error retrieving rate plans", e);
         }
     }
 
@@ -43,74 +42,94 @@ public class RatePlanServlet {
     @Path("/{id}")
     public Response getRatePlanById(@PathParam("id") int id) {
         try {
-            LOGGER.log(Level.INFO, "Fetching rate plan with ID: {0}", id);
-            RatePlan ratePlan = ratePlanDAO.getRatePlanById(id);
-            
+            RatePlan ratePlan = ratePlanDAO.getRatePlanWithServices(id);
             if (ratePlan != null) {
-                if (ratePlan.getServices() == null) {
-                    LOGGER.log(Level.INFO, "Initializing empty services list for plan ID: {0}", id);
-                    ratePlan.setServices(new ArrayList<>());
-                }
-                LOGGER.log(Level.INFO, "Successfully retrieved rate plan ID: {0}", id);
                 return Response.ok(ratePlan).build();
-            } else {
-                LOGGER.log(Level.WARNING, "Rate plan not found with ID: {0}", id);
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity("Rate plan not found with id: " + id)
-                        .build();
             }
-        } catch (SQLException e) {
-            String errorMsg = "Database error retrieving rate plan: " + e.getMessage();
-            LOGGER.log(Level.SEVERE, errorMsg, e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(errorMsg)
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Rate plan not found with id: " + id)
                     .build();
         } catch (Exception e) {
-            String errorMsg = "Unexpected error retrieving rate plan: " + e.getMessage();
-            LOGGER.log(Level.SEVERE, errorMsg, e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(errorMsg)
-                    .build();
+            LOGGER.log(Level.SEVERE, "Error retrieving rate plan", e);
+            return errorResponse("Error retrieving rate plan", e);
         }
     }
 
     @POST
-    public Response createRatePlan(RatePlan ratePlan) {
+    public Response createRatePlan(RatePlanRequest request) {
         try {
-            LOGGER.log(Level.INFO, "Creating new rate plan: {0}", ratePlan);
-            LOGGER.log(Level.INFO, "Services count: {0}", 
-                (ratePlan.getServices() != null ? ratePlan.getServices().size() : 0));
+            // Validate request
+            Response validationResponse = validateRatePlanRequest(request);
+            if (validationResponse != null) return validationResponse;
 
+            // Create rate plan
+            RatePlan ratePlan = new RatePlan();
+            ratePlan.setPlanName(request.getPlanName());
+            ratePlan.setDescription(request.getDescription());
+            ratePlan.setMonthlyFee(request.getMonthlyFee());
+            ratePlan.setCug(request.isCug());
+            ratePlan.setMaxCugMembers(request.isCug() ? request.getMaxCugMembers() : 0);
+            ratePlan.setCugUnit(request.isCug() ? request.getCugUnit() : 0);
+
+            // Add to database
             int planId = ratePlanDAO.addRatePlan(ratePlan);
-            ratePlan.setPlanId(planId);
             
-            LOGGER.log(Level.INFO, "Successfully created rate plan with ID: {0}", planId);
-            return Response.status(Response.Status.CREATED)
-                    .entity(ratePlan)
-                    .build();
+            // Add services if provided
+            if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
+                addServicesToRatePlan(planId, request.getServiceIds());
+            }
+
+            // Return created rate plan with services
+            RatePlan createdPlan = ratePlanDAO.getRatePlanWithServices(planId);
+            return Response.status(Response.Status.CREATED).entity(createdPlan).build();
+            
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error creating rate plan", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Error creating rate plan: " + e.getMessage())
-                    .build();
+            return errorResponse("Error creating rate plan", e);
         }
     }
 
     @PUT
     @Path("/{id}")
-    public Response updateRatePlan(@PathParam("id") int id, RatePlan ratePlan) {
+    public Response updateRatePlan(@PathParam("id") int id, RatePlanRequest request) {
         try {
-            LOGGER.log(Level.INFO, "Updating rate plan ID: {0}", id);
+            // Validate existing rate plan
+            RatePlan existing = ratePlanDAO.getRatePlanById(id);
+            if (existing == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("Rate plan not found with id: " + id)
+                        .build();
+            }
+
+            // Validate request
+            Response validationResponse = validateRatePlanRequest(request);
+            if (validationResponse != null) return validationResponse;
+
+            // Update rate plan
+            RatePlan ratePlan = new RatePlan();
             ratePlan.setPlanId(id);
+            ratePlan.setPlanName(request.getPlanName());
+            ratePlan.setDescription(request.getDescription());
+            ratePlan.setMonthlyFee(request.getMonthlyFee());
+            ratePlan.setCug(request.isCug());
+            ratePlan.setMaxCugMembers(request.isCug() ? request.getMaxCugMembers() : 0);
+            ratePlan.setCugUnit(request.isCug() ? request.getCugUnit() : 0);
+
             ratePlanDAO.updateRatePlan(ratePlan);
+
+            // Update services - first remove all existing, then add new ones
+            ratePlanDAO.removeAllServicesFromRatePlan(id);
+            if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
+                addServicesToRatePlan(id, request.getServiceIds());
+            }
+
+            // Return updated rate plan with services
+            RatePlan updatedPlan = ratePlanDAO.getRatePlanWithServices(id);
+            return Response.ok(updatedPlan).build();
             
-            LOGGER.log(Level.INFO, "Successfully updated rate plan ID: {0}", id);
-            return Response.ok(ratePlan).build();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error updating rate plan ID: " + id, e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Error updating rate plan: " + e.getMessage())
-                    .build();
+            LOGGER.log(Level.SEVERE, "Error updating rate plan", e);
+            return errorResponse("Error updating rate plan", e);
         }
     }
 
@@ -118,33 +137,115 @@ public class RatePlanServlet {
     @Path("/{id}")
     public Response deleteRatePlan(@PathParam("id") int id) {
         try {
-            LOGGER.log(Level.INFO, "Deleting rate plan ID: {0}", id);
             ratePlanDAO.deleteRatePlan(id);
-            
-            LOGGER.log(Level.INFO, "Successfully deleted rate plan ID: {0}", id);
             return Response.noContent().build();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error deleting rate plan ID: " + id, e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Error deleting rate plan: " + e.getMessage())
-                    .build();
+            LOGGER.log(Level.SEVERE, "Error deleting rate plan", e);
+            return errorResponse("Error deleting rate plan", e);
         }
     }
 
     @GET
-    @Path("/counts")
-    public Response getRatePlanCounts() {
+    @Path("/services/available")
+    public Response getAvailableServices() {
         try {
-            LOGGER.info("Fetching rate plan counts");
-            Map<String, Integer> counts = ratePlanDAO.getRatePlanCounts();
-            
-            LOGGER.info("Successfully retrieved rate plan counts");
-            return Response.ok(counts).build();
+            List<ServicePackage> services = servicePackageDAO.getAllServicePackages();
+            return Response.ok(services).build();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error retrieving rate plan counts", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Error retrieving rate plan counts: " + e.getMessage())
+            LOGGER.log(Level.SEVERE, "Error retrieving available services", e);
+            return errorResponse("Error retrieving services", e);
+        }
+    }
+
+    @GET
+    @Path("/{planId}/services")
+    public Response getServicesForRatePlan(@PathParam("planId") int planId) {
+        try {
+            List<ServicePackage> services = ratePlanDAO.getServicesForRatePlan(planId);
+            return Response.ok(services).build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error retrieving services for rate plan", e);
+            return errorResponse("Error retrieving services", e);
+        }
+    }
+
+    // Helper methods
+    private Response validateRatePlanRequest(RatePlanRequest request) {
+        if (request.getPlanName() == null || request.getPlanName().trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Plan name is required")
                     .build();
         }
+
+        if (request.getMonthlyFee() == null || request.getMonthlyFee().compareTo(BigDecimal.ZERO) < 0) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Valid monthly fee is required")
+                    .build();
+        }
+
+        if (request.isCug()) {
+            if (request.getMaxCugMembers() <= 0) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Max CUG members must be greater than 0 for CUG plans")
+                        .build();
+            }
+            if (request.getCugUnit() <= 0) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("CUG unit must be greater than 0 for CUG plans")
+                        .build();
+            }
+        }
+        return null;
+    }
+
+    private void addServicesToRatePlan(int planId, List<Integer> serviceIds) throws Exception {
+        List<ServicePackage> validServices = servicePackageDAO.getAllServicePackages();
+        Set<Integer> validServiceIds = validServices.stream()
+                .map(ServicePackage::getServiceId)
+                .collect(Collectors.toSet());
+
+        for (int serviceId : serviceIds) {
+            if (validServiceIds.contains(serviceId)) {
+                try {
+                    ratePlanDAO.addServiceToRatePlan(planId, serviceId);
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "Failed to add service: " + serviceId, e);
+                }
+            } else {
+                LOGGER.log(Level.WARNING, "Invalid service ID: " + serviceId);
+            }
+        }
+    }
+
+    private Response errorResponse(String message, Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(message + ": " + e.getMessage())
+                .build();
+    }
+
+    public static class RatePlanRequest {
+        private String planName;
+        private String description;
+        private BigDecimal monthlyFee;
+        private boolean isCug;
+        private int maxCugMembers;
+        private int cugUnit;
+        private List<Integer> serviceIds;
+
+        // Getters and setters
+        public String getPlanName() { return planName; }
+        public void setPlanName(String planName) { this.planName = planName; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public BigDecimal getMonthlyFee() { return monthlyFee; }
+        public void setMonthlyFee(BigDecimal monthlyFee) { this.monthlyFee = monthlyFee; }
+        public boolean isCug() { return isCug; }
+        public void setCug(boolean cug) { isCug = cug; }
+        public int getMaxCugMembers() { return maxCugMembers; }
+        public void setMaxCugMembers(int maxCugMembers) { this.maxCugMembers = maxCugMembers; }
+        public int getCugUnit() { return cugUnit; }
+        public void setCugUnit(int cugUnit) { this.cugUnit = cugUnit; }
+        public List<Integer> getServiceIds() { return serviceIds; }
+        public void setServiceIds(List<Integer> serviceIds) { this.serviceIds = serviceIds; }
     }
 }

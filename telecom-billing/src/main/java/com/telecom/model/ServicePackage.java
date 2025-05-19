@@ -1,42 +1,22 @@
 package com.telecom.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 
 public class ServicePackage {
-
     private int serviceId;
     private String serviceName;
     private String serviceType;
     private String serviceNetworkZone;
-    private int quota;
-    private BigDecimal ratePerUnit;
+    private int qouta;
     private String unitDescription;
-    private Integer validityDays;
-    @JsonProperty("is_free_unit")
-    private boolean is_free_unit;
-    @JsonProperty("isFreeUnit")
-    private boolean isFreeUnit;
+    private boolean isFreeUnite;
+    private BigDecimal freeUnitMonthlyFee;
+    private Timestamp createdAt;
 
-    // Constructors
     public ServicePackage() {
     }
 
-    public ServicePackage(int serviceId, String serviceName, String serviceType, String serviceNetworkZone,
-            int quota, BigDecimal ratePerUnit, String unitDescription,
-            Integer validityDays, boolean is_free_unit) {
-        this.serviceId = serviceId;
-        this.serviceName = serviceName;
-        this.serviceType = serviceType;
-        this.serviceNetworkZone = serviceNetworkZone;
-        this.quota = quota;
-        this.ratePerUnit = ratePerUnit;
-        this.unitDescription = unitDescription;
-        this.validityDays = validityDays;
-        this.is_free_unit = is_free_unit;
-    }
-
-    // Getters and Setters
     public int getServiceId() {
         return serviceId;
     }
@@ -69,20 +49,12 @@ public class ServicePackage {
         this.serviceNetworkZone = serviceNetworkZone;
     }
 
-    public int getQuota() {
-        return quota;
+    public int getQouta() {
+        return qouta;
     }
 
-    public void setQuota(int quota) {
-        this.quota = quota;
-    }
-
-    public BigDecimal getRatePerUnit() {
-        return ratePerUnit;
-    }
-
-    public void setRatePerUnit(BigDecimal ratePerUnit) {
-        this.ratePerUnit = ratePerUnit;
+    public void setQouta(int qouta) {
+        this.qouta = qouta;
     }
 
     public String getUnitDescription() {
@@ -93,42 +65,42 @@ public class ServicePackage {
         this.unitDescription = unitDescription;
     }
 
-    public Integer getValidityDays() {
-        return validityDays;
+    public boolean isFreeUnite() {
+        return isFreeUnite;
     }
 
-    public void setValidityDays(Integer validityDays) {
-        this.validityDays = validityDays;
+    public void setFreeUnite(boolean freeUnite) {
+        isFreeUnite = freeUnite;
     }
 
-    public boolean is_free_unit() {
-        return is_free_unit;
+    public BigDecimal getFreeUnitMonthlyFee() {
+        return freeUnitMonthlyFee;
     }
 
-    public void set_is_free_unit(boolean is_free_unit) {
-        this.is_free_unit = is_free_unit;
+    public void setFreeUnitMonthlyFee(BigDecimal freeUnitMonthlyFee) {
+        this.freeUnitMonthlyFee = freeUnitMonthlyFee;
     }
 
-    public boolean isFreeUnit() {
-        return isFreeUnit;
+    public Timestamp getCreatedAt() {
+        return createdAt;
     }
 
-    public void setFreeUnit(boolean freeUnit) {
-        isFreeUnit = freeUnit;
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
     }
 
     @Override
     public String toString() {
-        return "ServicePackage{"
-                + "serviceId=" + serviceId
-                + ", serviceName='" + serviceName + '\''
-                + ", serviceType='" + serviceType + '\''
-                + ", serviceNetworkZone='" + serviceNetworkZone + '\''
-                + ", quota=" + quota
-                + ", ratePerUnit=" + ratePerUnit
-                + ", unitDescription='" + unitDescription + '\''
-                + ", validityDays=" + validityDays
-                + ", is_free_unit=" + is_free_unit
-                + '}';
+        return "ServicePackage{" +
+                "serviceId=" + serviceId +
+                ", serviceName='" + serviceName + '\'' +
+                ", serviceType='" + serviceType + '\'' +
+                ", serviceNetworkZone='" + serviceNetworkZone + '\'' +
+                ", qouta=" + qouta +
+                ", unitDescription='" + unitDescription + '\'' +
+                ", isFreeUnite=" + isFreeUnite +
+                ", freeUnitMonthlyFee=" + freeUnitMonthlyFee +
+                ", createdAt=" + createdAt +
+                '}';
     }
 }

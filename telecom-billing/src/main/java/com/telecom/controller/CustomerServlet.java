@@ -1,144 +1,229 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package com.telecom.controller;
 
 import com.telecom.dao.CustomerDAO;
+import com.telecom.dao.RatePlanDAO;
+import com.telecom.dao.ServicePackageDAO;
 import com.telecom.model.Customer;
-import javax.servlet.*;
-import javax.servlet.http.*;
-import javax.servlet.annotation.*;
-import java.io.IOException;
-import java.sql.SQLException;
+import com.telecom.model.RatePlan;
+import com.telecom.model.ServicePackage;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
-/**
- *
- * @author mibrahim
- */
-
-
-
-
-public class CustomerServlet extends HttpServlet {
+@Path("/customers")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class CustomerServlet {
     private CustomerDAO customerDAO;
+    private ServicePackageDAO servicePackageDAO;
+    private RatePlanDAO ratePlanDAO;
 
-    @Override
-    public void init() {
+    public CustomerServlet() {
         customerDAO = new CustomerDAO();
+        servicePackageDAO = new ServicePackageDAO();
+        ratePlanDAO = new RatePlanDAO();
     }
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        String action = request.getParameter("action");
-
+    @GET
+    public Response getAllCustomers() {
         try {
-            if (action == null) {
-                listCustomers(request, response);
+            List<Customer> customers = customerDAO.getAllCustomers();
+            return Response.ok(customers).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error retrieving customers: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @GET
+    @Path("/{id}")
+    public Response getCustomerById(@PathParam("id") int id) {
+        try {
+            Customer customer = customerDAO.getCustomerById(id);
+            if (customer != null) {
+                return Response.ok(customer).build();
             } else {
-                switch (action) {
-                    case "new":
-                        showNewForm(request, response);
-                        break;
-                    case "edit":
-                        showEditForm(request, response);
-                        break;
-                    case "delete":
-                        deleteCustomer(request, response);
-                        break;
-                    case "search":
-                        searchCustomers(request, response);
-                        break;
-                    default:
-                        listCustomers(request, response);
-                        break;
-                }
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("Customer not found with id: " + id)
+                        .build();
             }
-        } catch (SQLException ex) {
-            throw new ServletException(ex);
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error retrieving customer: " + e.getMessage())
+                    .build();
         }
     }
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        String action = request.getParameter("action");
-
+    @POST
+    public Response createCustomer(Customer customer) {
         try {
-            if (action == null) {
-                insertCustomer(request, response);
-            } else if (action.equals("update")) {
-                updateCustomer(request, response);
+            // Validate required fields
+            if (customer.getName() == null || customer.getName().trim().isEmpty() ||
+                customer.getPhone() == null || customer.getPhone().trim().isEmpty() ||
+                customer.getNid() == null || customer.getNid().trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Name, phone, and NID are required fields")
+                        .build();
             }
-        } catch (SQLException ex) {
-            throw new ServletException(ex);
+
+            // Validate status
+            if (customer.getStatus() == null || !Arrays.asList("ACTIVE", "INACTIVE", "SUSPENDED")
+                    .contains(customer.getStatus().toUpperCase())) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Invalid status value. Must be ACTIVE, INACTIVE, or SUSPENDED")
+                        .build();
+            }
+
+            // Check for duplicate phone
+            if (customerDAO.phoneNumberExists(customer.getPhone())) {
+                return Response.status(Response.Status.CONFLICT)
+                        .entity("Phone number already exists")
+                        .build();
+            }
+
+            // Set default registration date if null
+            if (customer.getRegistrationDate() == null) {
+                customer.setRegistrationDate(new java.sql.Timestamp(System.currentTimeMillis()));
+            }
+
+            customerDAO.addCustomer(customer);
+            return Response.status(Response.Status.CREATED)
+                    .entity(customer)
+                    .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error creating customer: " + e.getMessage())
+                    .build();
         }
     }
 
-    private void listCustomers(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, ServletException, IOException {
-        List<Customer> customers = customerDAO.getAllCustomers();
-        request.setAttribute("customers", customers);
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/customer/list.jsp");
-        dispatcher.forward(request, response);
+    @PUT
+    @Path("/{id}")
+    public Response updateCustomer(@PathParam("id") int id, Customer customer) {
+        try {
+            customer.setCustomerId(id);
+            
+            // Validate required fields
+            if (customer.getName() == null || customer.getName().trim().isEmpty() ||
+                customer.getPhone() == null || customer.getPhone().trim().isEmpty() ||
+                customer.getNid() == null || customer.getNid().trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Name, phone, and NID are required fields")
+                        .build();
+            }
+
+            // Validate status
+            if (customer.getStatus() == null || !Arrays.asList("ACTIVE", "INACTIVE", "SUSPENDED")
+                    .contains(customer.getStatus().toUpperCase())) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Invalid status value. Must be ACTIVE, INACTIVE, or SUSPENDED")
+                        .build();
+            }
+
+            // Check for duplicate phone excluding current customer
+            if (customerDAO.phoneNumberExists(customer.getPhone(), id)) {
+                return Response.status(Response.Status.CONFLICT)
+                        .entity("Phone number already exists for another customer")
+                        .build();
+            }
+
+            customerDAO.updateCustomer(customer);
+            return Response.ok(customer).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error updating customer: " + e.getMessage())
+                    .build();
+        }
     }
 
-    private void showNewForm(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/customer/form.jsp");
-        dispatcher.forward(request, response);
+    @DELETE
+    @Path("/{id}")
+    public Response deleteCustomer(@PathParam("id") int id) {
+        try {
+            customerDAO.deleteCustomer(id);
+            return Response.noContent().build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error deleting customer: " + e.getMessage())
+                    .build();
+        }
     }
 
-    private void showEditForm(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, ServletException, IOException {
-        int id = Integer.parseInt(request.getParameter("id"));
-        Customer customer = customerDAO.getCustomer(id);
-        request.setAttribute("customer", customer);
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/customer/form.jsp");
-        dispatcher.forward(request, response);
+    @GET
+    @Path("/free-unit-options")
+    public Response getFreeUnitOptions() {
+        try {
+            List<ServicePackage> freeUnits = servicePackageDAO.getFreeUnitOptions();
+            return Response.ok(freeUnits).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error retrieving free unit options: " + e.getMessage())
+                    .build();
+        }
     }
 
-    private void insertCustomer(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, IOException {
-        String name = request.getParameter("name");
-        String phone = request.getParameter("phone");
-        String email = request.getParameter("email");
-        String address = request.getParameter("address");
-
-        Customer newCustomer = new Customer(name, phone, email, address);
-        customerDAO.addCustomer(newCustomer);
-        response.sendRedirect("customers");
+    @GET
+    @Path("/rate-plan-options")
+    public Response getRatePlanOptions() {
+        try {
+            List<RatePlan> ratePlans = ratePlanDAO.getAllRatePlans();
+            return Response.ok(ratePlans).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error retrieving rate plan options: " + e.getMessage())
+                    .build();
+        }
     }
 
-    private void updateCustomer(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, IOException {
-        int id = Integer.parseInt(request.getParameter("id"));
-        String name = request.getParameter("name");
-        String phone = request.getParameter("phone");
-        String email = request.getParameter("email");
-        String address = request.getParameter("address");
-        String status = request.getParameter("status");
-
-        Customer customer = new Customer(name, phone, email, address);
-        customer.setCustomerId(id);
-        customer.setStatus(status);
-        customerDAO.updateCustomer(customer);
-        response.sendRedirect("customers");
+    @GET
+    @Path("/search")
+    public Response searchCustomers(
+            @QueryParam("query") String query,
+            @QueryParam("status") String status) {
+        try {
+            List<Customer> customers = customerDAO.searchCustomers(query, status);
+            return Response.ok(customers).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error searching customers: " + e.getMessage())
+                    .build();
+        }
     }
 
-    private void deleteCustomer(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, IOException {
-        int id = Integer.parseInt(request.getParameter("id"));
-        customerDAO.deleteCustomer(id);
-        response.sendRedirect("customers");
+    @GET
+    @Path("/stats")
+    public Response getCustomerStats() {
+        try {
+            Map<String, Integer> stats = customerDAO.getCustomerStats();
+            return Response.ok(stats).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error retrieving customer stats: " + e.getMessage())
+                    .build();
+        }
     }
 
-    private void searchCustomers(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, ServletException, IOException {
-        String searchTerm = request.getParameter("searchTerm");
-        List<Customer> customers = customerDAO.searchCustomers(searchTerm); // ->>>> dont forget to implemrnt searchCustomers in customerDAO
-        request.setAttribute("customers", customers);
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/jsp/customer/list.jsp");
-        dispatcher.forward(request, response);
+    @GET
+    @Path("/check-phone")
+    public Response checkPhoneNumber(
+            @QueryParam("phone") String phone,
+            @QueryParam("excludeId") Integer excludeId) {
+        try {
+            boolean exists;
+            if (excludeId != null) {
+                exists = customerDAO.phoneNumberExists(phone, excludeId);
+            } else {
+                exists = customerDAO.phoneNumberExists(phone);
+            }
+            return Response.ok().entity(exists).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error checking phone number: " + e.getMessage())
+                    .build();
+        }
     }
 }

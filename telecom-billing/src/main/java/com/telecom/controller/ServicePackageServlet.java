@@ -5,7 +5,6 @@ import com.telecom.model.ServicePackage;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +12,6 @@ import java.util.Map;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ServicePackageServlet {
-
     private ServicePackageDAO servicePackageDAO;
 
     public ServicePackageServlet() {
@@ -31,7 +29,6 @@ public class ServicePackageServlet {
                     .build();
         }
     }
-
 
     @GET
     @Path("/{id}")
@@ -55,13 +52,11 @@ public class ServicePackageServlet {
     @POST
     public Response createServicePackage(ServicePackage servicePackage) {
         try {
-            System.out.println("Received package: " + servicePackage); // Debug logging
             servicePackageDAO.addServicePackage(servicePackage);
             return Response.status(Response.Status.CREATED)
                     .entity(servicePackage)
                     .build();
         } catch (Exception e) {
-            e.printStackTrace(); // Add this for debugging
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Error creating service package: " + e.getMessage())
                     .build();

@@ -1,5 +1,6 @@
 package com.telecom.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
@@ -9,12 +10,17 @@ public class RatePlan {
     private String planName;
     private String description;
     private BigDecimal monthlyFee;
-    private boolean isCug;
+    private boolean cug;
     private int maxCugMembers;
     private int cugUnit;
     private Timestamp createdAt;
     private List<ServicePackage> servicePackages;
 
+    
+    @JsonProperty("isCug")  // Add this annotation
+    public boolean isCug() { 
+        return cug; 
+    }
     // Constructors
     public RatePlan() {
     }
@@ -25,7 +31,7 @@ public class RatePlan {
         this.planName = planName;
         this.description = description;
         this.monthlyFee = monthlyFee;
-        this.isCug = isCug;
+        this.cug = cug;
         this.maxCugMembers = maxCugMembers;
         this.cugUnit = cugUnit;
         this.createdAt = createdAt;
@@ -40,8 +46,8 @@ public class RatePlan {
     public void setDescription(String description) { this.description = description; }
     public BigDecimal getMonthlyFee() { return monthlyFee; }
     public void setMonthlyFee(BigDecimal monthlyFee) { this.monthlyFee = monthlyFee; }
-    public boolean isCug() { return isCug; }
-    public void setCug(boolean cug) { isCug = cug; }
+    public boolean cug() { return cug; }
+    public void setCug(boolean cug) { this.cug = cug; }
     public int getMaxCugMembers() { return maxCugMembers; }
     public void setMaxCugMembers(int maxCugMembers) { this.maxCugMembers = maxCugMembers; }
     public int getCugUnit() { return cugUnit; }
@@ -58,7 +64,7 @@ public class RatePlan {
                 ", planName='" + planName + '\'' +
                 ", description='" + description + '\'' +
                 ", monthlyFee=" + monthlyFee +
-                ", isCug=" + isCug +
+                ", isCug=" + cug +
                 ", maxCugMembers=" + maxCugMembers +
                 ", cugUnit=" + cugUnit +
                 ", createdAt=" + createdAt +

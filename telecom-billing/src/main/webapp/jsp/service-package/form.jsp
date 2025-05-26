@@ -1,6 +1,5 @@
 <%@ include file="../includes/header.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 
 <div class="row mb-4">
     <div class="col-md-6">
@@ -52,17 +51,18 @@
                         <label for="serviceNetworkZone" class="form-label">Network Zone *</label>
                         <select class="form-control" id="serviceNetworkZone" name="serviceNetworkZone" required>
                             <option value="">Select Zone</option>
-                            <option value="ON_NET">On-Net</option>
+                            <option value="NET">On-Net</option>
                             <option value="ROAMING">Roaming</option>
-                            <option value="CROSS_NET">Cross-Net</option>
+                            <option value="CROSS">Cross-Net</option>
                         </select>
                         <div class="invalid-feedback">Please select a network zone.</div>
                     </div>
 
                     <div class="form-group mb-3">
-                        <label for="quota" class="form-label">Quota *</label>
-                        <input type="number" class="form-control" id="quota" name="quota" value="1000" required min="0">
+                        <label for="qouta" class="form-label">Quota *</label>
+                        <input type="number" class="form-control" id="qouta" name="qouta" value="1000" required min="0">
                         <small class="form-text text-muted">Enter 0 for unlimited quota</small>
+                        <div class="invalid-feedback">Please provide a valid quota (positive number).</div>
                     </div>
                 </div>
             </div>
@@ -70,40 +70,39 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-group mb-3">
-                        <label for="ratePerUnit" class="form-label">Rate Per Unit (EGP) *</label>
+                        <label for="unitDescription" class="form-label">Unit Description *</label>
+                        <select class="form-control" id="unitDescription" name="unitDescription" required>
+                            <option value="">Select Unit</option>
+                            <option value="Minutes">Minutes</option>
+                            <option value="MB">MB</option>
+                            <option value="Texts">Texts</option>
+                            <option value="Unlimited">Unlimited</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a unit description.</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group mb-3" id="freeUnitFeeGroup" style="display: none;">
+                        <label for="freeUnitMonthlyFee" class="form-label">Monthly Fee (EGP) *</label>
                         <div class="input-group">
-                            <input type="number" step="0.0001" class="form-control" id="ratePerUnit" name="ratePerUnit" value="0.0500" required min="0">
+                            <input type="number" step="0.01" class="form-control" id="freeUnitMonthlyFee" name="freeUnitMonthlyFee" value="0.00" min="0" required>
                             <span class="input-group-text">EGP</span>
                         </div>
-                        <small class="form-text text-muted">Must be a number with up to 4 decimal places</small>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="form-group mb-3">
-                        <label for="unitDescription" class="form-label">Unit Description</label>
-                        <input type="text" class="form-control" id="unitDescription" name="unitDescription" maxlength="50">
-                        <small class="form-text text-muted">e.g. "Per minute", "Per MB", "Per SMS" (max 50 characters)</small>
+                        <small class="form-text text-muted">Monthly subscription fee for this package</small>
+                        <div class="invalid-feedback">Please provide a valid monthly fee (positive number).</div>
                     </div>
                 </div>
             </div>
 
             <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group mb-3">
-                        <label for="validityDays" class="form-label">Validity Days</label>
-                        <input type="number" class="form-control" id="validityDays" name="validityDays" min="1">
-                        <small class="form-text text-muted">Leave empty if no expiration</small>
-                    </div>
-                </div>
-
                 <div class="col-md-12">
-                    <div class="form-group mb-25 form-check">
-                        <input type="checkbox" class="form-check-input" id="isFreeUnit" name="is_free_unit">
-                        <label class="form-check-label" for="isFreeUnit">Is Free Unit</label>
+                    <div class="form-group mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isFreeUnite" name="isFreeUnite">
+                        <label class="form-check-label" for="isFreeUnite">Is Free Unit</label>
+                        <small class="form-text text-muted d-block">Check this if this package is a subscription-based free unit package</small>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
@@ -114,134 +113,107 @@
         </button>
     </div>
 </form>
-
 <script>
     $(document).ready(function () {
-        // Get the ID from the URL if editing
-        const urlParams = new URLSearchParams(window.location.search);
-        const packageId = urlParams.get('id');
+        // Toggle free unit fee field based on checkbox
+        $('#isFreeUnite').change(function () {
+            if ($(this).is(':checked')) {
+                $('#freeUnitFeeGroup').show();
+                $('#freeUnitMonthlyFee').attr('required', true);
+            } else {
+                $('#freeUnitFeeGroup').hide();
+                $('#freeUnitMonthlyFee').removeAttr('required');
+                $('#freeUnitMonthlyFee').val('0.00');
+            }
+        });
 
-        if (packageId) {
-            loadPackageData(packageId);
-        }
+        // Auto-select unit description based on service type
+        $('#serviceType').change(function () {
+            const type = $(this).val();
+            const unitSelect = $('#unitDescription');
+
+            if (type === 'VOICE') {
+                unitSelect.val('Minutes');
+            } else if (type === 'SMS') {
+                unitSelect.val('Texts');
+            } else if (type === 'DATA') {
+                unitSelect.val('MB');
+            }
+        });
 
         // Form submission handler
         $('#packageForm').submit(function (e) {
             e.preventDefault();
 
+            // Validate form
             if (!this.checkValidity()) {
                 e.stopPropagation();
                 $(this).addClass('was-validated');
                 return;
             }
 
+            // Prepare form data
             const formData = {
                 serviceName: $('#serviceName').val(),
                 serviceType: $('#serviceType').val(),
                 serviceNetworkZone: $('#serviceNetworkZone').val(),
-                quota: parseInt($('#quota').val()),
-                ratePerUnit: $('#ratePerUnit').val(), // Send as string, let Java convert
-                unitDescription: $('#unitDescription').val() || null,
-                validityDays: $('#validityDays').val() ? parseInt($('#validityDays').val()) : null,
-                is_free_unit: $('#isFreeUnit').is(':checked') // Match Java field name exactly
+                qouta: parseInt($('#qouta').val()),
+                unitDescription: $('#unitDescription').val(),
+                freeUnite: $('#isFreeUnite').is(':checked'),
+                freeUnitMonthlyFee: $('#isFreeUnite').is(':checked') ?
+                        parseFloat($('#freeUnitMonthlyFee').val()) : 0.00
             };
 
-            const method = packageId ? 'PUT' : 'POST';
-            const url = '${pageContext.request.contextPath}/api/service-packages' + (packageId ? '/' + packageId : '');
-
+            // Disable submit button to prevent multiple submissions
             $('#submitBtn').prop('disabled', true);
 
+            // Show loading state
+            $('#submitBtn').html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+
+            // Send AJAX request
             $.ajax({
-                url: url,
-                method: method,
+                url: '${pageContext.request.contextPath}/api/service-packages',
+                type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(formData),
-                headers: {
-                    'Authorization': 'Bearer ' + getAuthToken()
+                success: function (response) {
+                    showAlert('success', 'Service package created successfully!');
+                    // Reset form
+                    $('#packageForm')[0].reset();
+                    $('#packageForm').removeClass('was-validated');
+
+                    // Redirect after short delay
+                    setTimeout(function () {
+                        window.location.href = 'view.jsp?id=' + response.serviceId;
+                    }, 1500);
                 },
-                success: function (data) {
 
-                    console.log('Success handler triggered'); // Add this line
-                    showAlert('success', packageId ? 'Package updated successfully!' : 'Package created successfully!');
-
-                    if (!packageId) {
-                        setTimeout(function () {
-                            window.location.href = 'view.jsp?id=' + data.serviceId;
-                        }, 1000); // More time before redirect
-                    }
-
-                },
                 error: function (xhr) {
-                    $('#submitBtn').prop('disabled', false);
-                    let message = 'An error occurred';
-
+                    let errorMessage = 'Error creating service package';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
-                        message = xhr.responseJSON.message;
-                    } else if (xhr.status === 403) {
-                        message = 'Authentication failed. Please login again.';
-                        setTimeout(() => window.location.href = '${pageContext.request.contextPath}/login.jsp', 2000);
+                        errorMessage = xhr.responseJSON.message;
                     }
-
-                    showAlert('danger', message);
-                    console.error('Error:', xhr);
+                    showAlert('danger', errorMessage);
+                },
+                complete: function () {
+                    // Re-enable submit button
+                    $('#submitBtn').prop('disabled', false);
+                    $('#submitBtn').html('<i class="fas fa-save"></i> Save Package');
                 }
             });
         });
+
+        // Function to show alert messages
+        function showAlert(type, message) {
+            const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+    ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+            $('#alertContainer').html(alertHtml);
+        }
     });
 
-    function loadPackageData(packageId) {
-        $.ajax({
-            url: '${pageContext.request.contextPath}/api/service-packages/' + packageId,
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + getAuthToken()
-            },
-            success: function (data) {
-                $('#formTitle').text('Edit Service Package');
-                $('#serviceId').val(data.serviceId);
-                $('#serviceName').val(data.serviceName);
-                $('#serviceType').val(data.serviceType);
-                $('#serviceNetworkZone').val(data.serviceNetworkZone);
-                $('#quota').val(data.quota);
-                $('#ratePerUnit').val(data.ratePerUnit);
-                $('#unitDescription').val(data.unitDescription || '');
-                if (data.validityDays) {
-                    $('#validityDays').val(data.validityDays);
-                }
-            },
-            error: function (xhr) {
-                showAlert('danger', 'Failed to load package data');
-                console.error('Error loading package:', xhr);
-            }
-        });
-    }
-
-    function getAuthToken() {
-        return localStorage.getItem('authToken') || '';
-    }
-
-    function showAlert(type, message) {
-        const alertHtml = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
-    ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>`;
-        $('#alertContainer').html(alertHtml);
-    }
-// Simple BigDecimal implementation for JavaScript
-    function BigDecimal(value) {
-        this.value = parseFloat(value);
-        this.setScale = function (scale, roundingMode) {
-            const factor = Math.pow(10, scale);
-            const rounded = Math.round(this.value * factor) / factor;
-            return rounded;
-        };
-        return this;
-    }
-
-// Rounding mode constants
-    const RoundingMode = {
-        HALF_UP: 4
-    };
 </script>
-
 <%@ include file="../includes/footer.jsp" %>

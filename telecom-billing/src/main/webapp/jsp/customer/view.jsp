@@ -181,20 +181,24 @@
             return;
         }
 
-        // First load customer data
+        // Load customer and related data from combined API
         $.ajax({
             url: '${pageContext.request.contextPath}/api/customers/' + customerId,
             method: 'GET',
             headers: {
                 'Authorization': 'Bearer ' + getAuthToken()
             },
-            success: function (customerData) {
+            success: function (response) {
+                const customerData = response.customer;
+                const planData = response.ratePlan;
+                const freeUnit = response.freeUnit;
+
                 // Basic Information
                 $('#customerId').text(customerData.customerId);
                 $('#name').text(customerData.name);
                 $('#nid').text(customerData.nid || 'N/A');
                 $('#status').text(customerData.status)
-                        .addClass(getStatusClass(customerData.status));
+                            .addClass(getStatusClass(customerData.status));
 
                 // Contact Information
                 $('#phone').text(customerData.phone);
@@ -204,6 +208,8 @@
                 // Account Information
                 $('#creditLimit').text('EGP ' + customerData.creditLimit);
                 $('#registrationDate').text(formatDate(customerData.registrationDate));
+                $('#planName').text(planData ? (planData.planName + ' - Fees: ' + planData.monthlyFee + ' LE') : 'N/A');
+                $('#freeUnitName').text(freeUnit ? (freeUnit.serviceName + ' - Fees: ' + freeUnit.freeUnitMonthlyFee + ' LE') : 'N/A');
 
                 // Additional Information
                 $('#occName').text(customerData.occName || 'N/A');
@@ -224,9 +230,6 @@
 
                 // Set edit button href
                 $('#editBtn').attr('href', 'form.jsp?id=' + customerData.customerId);
-
-                // Now load related data
-                loadRelatedData(customerData);
             },
             error: function (xhr) {
                 handleApiError(xhr);
@@ -234,52 +237,8 @@
         });
     });
 
-
-
-        function loadRelatedData(customerData) {
-    if (customerData.planId) {
-        $.ajax({
-            url: '${pageContext.request.contextPath}/api/rate-plans/' + customerData.planId,
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + getAuthToken()
-            },
-            success: function(planData) {
-                // ? Show the plan name
-                $('#planName').text(planData.planName +' - Fees: ' + planData.monthlyFee +' LE'|| 'N/A');
-
-                // ? Find first free unit service
-                let freeUnit = null;
-                if (Array.isArray(planData.servicePackages)) {
-                    freeUnit = planData.servicePackages.find(pkg => pkg.freeUnite === true);
-                }
-
-                if (freeUnit) {
-                    $('#freeUnitName').text(freeUnit.serviceName +' \n- Fees: ' + freeUnit.freeUnitMonthlyFee +' LE'|| 'N/A');
-                } else {
-                    $('#freeUnitName').text('N/A');
-                }
-            },
-            error: function() {
-                $('#planName').text('N/A');
-                $('#freeUnitName').text('N/A');
-            }
-        });
-    } else {
-        $('#planName').text('N/A');
-        $('#freeUnitName').text('N/A');
-    }
-}
-
-
-
-
-
-
-
     function getStatusClass(status) {
-        if (!status)
-            return '';
+        if (!status) return '';
         switch (status.toUpperCase()) {
             case 'ACTIVE':
                 return 'status-active';
@@ -292,10 +251,9 @@
         }
     }
 
-    function formatDate(dateString) {
-        if (!dateString)
-            return 'N/A';
-        const date = new Date(dateString);
+    function formatDate(timestamp) {
+        if (!timestamp) return 'N/A';
+        const date = new Date(timestamp);
         return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
     }
 
@@ -330,9 +288,9 @@
     function showAlert(type, message) {
         var alertId = 'alert-' + Date.now();
         var alertHtml = '<div id="' + alertId + '" class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
-                message +
-                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                '</div>';
+            message +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+            '</div>';
 
         $('#alertContainer').html(alertHtml);
 

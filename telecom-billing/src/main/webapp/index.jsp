@@ -182,6 +182,7 @@
                 });
             });
 
+
             // Floating shapes animation
             const shapes = document.querySelectorAll('.shape');
             shapes.forEach((shape, index) => {

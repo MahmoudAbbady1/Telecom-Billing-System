@@ -1,89 +1,11 @@
-<%@ page import="java.util.Map" %>
-<%@ page import="java.util.HashMap" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%@ include file="../includes/header.jsp" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-
-<style>
-    .status-active {
-        color: green;
-        font-weight: bold;
-    }
-    .status-inactive {
-        color: red;
-        font-weight: bold;
-    }
-    .status-suspended {
-        color: orange;
-        font-weight: bold;
-    }
-    .card-icon {
-        width: 50px;
-        height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-    }
-    .detail-card {
-        margin-bottom: 20px;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
-    .detail-card .card-header {
-        background-color: #f8f9fa;
-        font-weight: 600;
-    }
-    .cug-fields {
-        display: none;
-    }
-    .service-list {
-        max-height: 300px;
-        overflow-y: auto;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 10px;
-    }
-    .service-item {
-        padding: 8px;
-        border-bottom: 1px solid #eee;
-        display: flex;
-        align-items: center;
-    }
-    .service-item:last-child {
-        border-bottom: none;
-    }
-    .service-checkbox {
-        margin-right: 10px;
-    }
-    .service-item label {
-        margin-bottom: 0;
-        cursor: pointer;
-        flex-grow: 1;
-    }
-    .service-type-badge {
-        margin-left: 10px;
-        font-size: 0.8em;
-    }
-    .service-details {
-        font-size: 0.9em;
-        color: #6c757d;
-        margin-top: 4px;
-    }
-    .free-status {
-        font-weight: bold;
-    }
-    .free-status.yes {
-        color: #28a745;
-    }
-    .free-status.no {
-        color: #dc3545;
-    }
-</style>
-
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
 <div class="row mb-4">
     <div class="col-md-6">
         <h3 class="page-header">
-            <i class="fas fa-tags"></i> ${empty param.id ? 'Create' : 'Edit'} Rate Plan
+            <i class="fas fa-file-invoice-dollar"></i> 
+            <span id="formTitle">Create New Rate Plan</span>
         </h3>
     </div>
     <div class="col-md-6 text-end">
@@ -95,372 +17,467 @@
 
 <div id="alertContainer"></div>
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="card detail-card">
-            <div class="card-header">
-                <i class="fas fa-info-circle"></i> Rate Plan Information
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+        <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> Plan Information</h5>
+    </div>
+    <div class="card-body">
+        <form id="ratePlanForm">
+            <input type="hidden" id="planId" name="planId" value="">
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="planName" class="form-label">Plan Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="planName" name="planName" required
+                           maxlength="100" pattern="[A-Za-z0-9 ]+" title="Alphanumeric characters only">
+                </div>
+                <div class="col-md-6">
+                    <label for="monthlyFee" class="form-label">Monthly Fee (EGP) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="monthlyFee" name="monthlyFee" 
+                           min="0" step="0.01" max="999999.99" required>
+                </div>
             </div>
-            <div class="card-body">
-                <form id="ratePlanForm">
-                    <input type="hidden" id="planId" name="planId" value="${param.id}">
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="planName" class="form-label">Plan Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="planName" name="planName" required>
-                            <div class="invalid-feedback">Please provide a plan name.</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="monthlyFee" class="form-label">Monthly Fee <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text">EGP</span>
-                                <input type="number" class="form-control" id="monthlyFee" name="monthlyFee" 
-                                       step="0.01" min="0" required>
-                                <div class="invalid-feedback">Please provide a valid monthly fee.</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="2"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="isCug" name="isCug">
-                                <label class="form-check-label" for="isCug">Closed User Group (CUG)</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="cugFields" class="row mb-3 cug-fields">
-                        <div class="col-md-6">
-                            <label for="maxCugMembers" class="form-label">Max CUG Members <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="maxCugMembers" name="maxCugMembers" min="1">
-                            <div class="invalid-feedback">Please provide maximum CUG members.</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="cugUnit" class="form-label">CUG Unit (minutes/SMS/MB) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="cugUnit" name="cugUnit" min="1">
-                            <div class="invalid-feedback">Please provide CUG unit value.</div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <label class="form-label">Service Packages</label>
-                            <div class="service-list" id="serviceList">
-                                <div class="text-center py-3">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-12 text-end">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Save
-                            </button>
-                        </div>
-                    </div>
-                </form>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"
+                              maxlength="500"></textarea>
+                </div>
             </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="isCug" name="isCug">
+                        <label class="form-check-label" for="isCug">Is CUG (Closed User Group) Plan</label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cugDetails" style="display: none;">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="maxCugMembers" class="form-label">Max CUG Members <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="maxCugMembers" name="maxCugMembers" 
+                               min="1" max="1000">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="cugUnit" class="form-label">CUG Unit (Minutes/Texts/MB) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="cugUnit" name="cugUnit" 
+                               min="1" max="100000">
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+        <h5 class="card-title mb-0"><i class="fas fa-cubes"></i> Included Services</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <select id="serviceSelect" class="form-select">
+                    <option value="">Select a service to add</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <button id="addServiceBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Service
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table id="selectedServicesTable" class="table table-striped" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Service ID</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Network Zone</th>
+                        <th>Quota</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 </div>
 
+<div class="text-center mb-4">
+    <button id="saveBtn" class="btn btn-success me-2">
+        <i class="fas fa-save"></i> Save Rate Plan
+    </button>
+    <button id="cancelBtn" class="btn btn-danger">
+        <i class="fas fa-times"></i> Cancel
+    </button>
+</div>
+
 <script>
-    
-    
-    <%!
-    private boolean toBoolean(Object value) {
-        if (value == null) return false;
-        if (value instanceof Boolean) return (Boolean) value;
-        if (value instanceof Number) return ((Number) value).intValue() != 0;
-        if (value instanceof String) {
-            String s = ((String) value).toLowerCase();
-            return s.equals("true") || s.equals("1") || s.equals("yes") || s.equals("on");
-        }
-        return false;
-    }
-%>
     $(document).ready(function () {
-        const planId = $('#planId').val();
+        const urlParams = new URLSearchParams(window.location.search);
+        const planId = urlParams.get('id');
+        let isEditMode = !!planId;
+        let selectedServices = [];
+        let allServices = [];
+        const addedServiceIds = new Set();
 
-        // Initialize form validation
-        initFormValidation();
+        // Initialize form based on mode (create/edit)
+        if (isEditMode) {
+            $('#formTitle').text('Edit Rate Plan');
+            loadRatePlan(planId);
+        } else {
+            $('#formTitle').text('Create New Rate Plan');
+        }
 
-        // Load services
+        // Load available services
         loadAvailableServices();
 
-        // Toggle CUG fields
+        // Toggle CUG details based on checkbox
         $('#isCug').change(function () {
-            toggleCugFields($(this).is(':checked'));
-        });
-
-        // If editing, load the existing rate plan
-        if (planId) {
-            loadRatePlan(planId);
-        }
-
-        // Form submission
-        $('#ratePlanForm').submit(function (e) {
-            e.preventDefault();
-            if (validateForm()) {
-                saveRatePlan();
+            if ($(this).is(':checked')) {
+                $('#cugDetails').show();
+                $('#maxCugMembers').prop('required', true);
+                $('#cugUnit').prop('required', true);
+            } else {
+                $('#cugDetails').hide();
+                $('#maxCugMembers').prop('required', false);
+                $('#cugUnit').prop('required', false);
             }
         });
-    });
 
-    function initFormValidation() {
-        // Enable Bootstrap validation
-        $('#ratePlanForm').on('submit', function (event) {
-            if (this.checkValidity() === false) {
-                event.preventDefault();
-                event.stopPropagation();
+        // Add service to the plan
+        $('#addServiceBtn').click(function () {
+            const serviceId = parseInt($('#serviceSelect').val());
+            if (!serviceId) {
+                showAlert('warning', 'Please select a service to add');
+                return;
             }
-            $(this).addClass('was-validated');
+
+            if (addedServiceIds.has(serviceId)) {
+                showAlert('warning', 'This service has already been added');
+                return;
+            }
+
+            const service = allServices.find(s => s.serviceId === serviceId);
+            if (service) {
+                selectedServices.push(service);
+                addedServiceIds.add(serviceId);
+                refreshSelectedServicesTable();
+                $('#serviceSelect').val('');
+            }
         });
-    }
 
-    function toggleCugFields(show) {
-        if (show) {
-            $('#cugFields').show();
-            $('#maxCugMembers').prop('required', true);
-            $('#cugUnit').prop('required', true);
-        } else {
-            $('#cugFields').hide();
-            $('#maxCugMembers').prop('required', false);
-            $('#cugUnit').prop('required', false);
+        // Remove service from the plan
+        $(document).on('click', '.remove-service-btn', function () {
+            const serviceId = parseInt($(this).data('service-id'));
+            selectedServices = selectedServices.filter(s => s.serviceId !== serviceId);
+            addedServiceIds.delete(serviceId);
+            refreshSelectedServicesTable();
+        });
+
+        // Save rate plan
+        $('#saveBtn').click(function () {
+            if (!validateForm())
+                return;
+
+            const requestData = {
+                planName: $('#planName').val(),
+                description: $('#description').val(),
+                monthlyFee: parseFloat($('#monthlyFee').val()).toFixed(2),
+                isCug: $('#isCug').is(':checked'),
+                maxCugMembers: $('#isCug').is(':checked') ? parseInt($('#maxCugMembers').val()) : 0,
+                cugUnit: $('#isCug').is(':checked') ? parseInt($('#cugUnit').val()) : 0,
+                serviceIds: selectedServices.map(s => s.serviceId)
+            };
+
+            console.log("Sending data:", JSON.stringify(requestData, null, 2));
+
+            if (isEditMode) {
+                updateRatePlan(requestData);
+            } else {
+                createRatePlan(requestData);
+            }
+        });
+
+        // Cancel button
+        $('#cancelBtn').click(function () {
+            window.location.href = 'list.jsp';
+        });
+
+        // Initialize selected services table
+        const servicesTable = $('#selectedServicesTable').DataTable({
+            responsive: true,
+            searching: false,
+            paging: false,
+            info: false,
+            autoWidth: false,
+            columns: [
+                {data: 'serviceId'},
+                {data: 'serviceName'},
+                {data: 'serviceType'},
+                {data: 'serviceNetworkZone'},
+                {
+                    data: null,
+                    render: function (data) {
+                        return data.qouta + ' ' + (data.unitDescription || '');
+                    }
+                },
+                {
+                    data: null,
+                    render: function (data) {
+                        return `<button class="btn btn-sm btn-danger remove-service-btn" 
+                                data-service-id="${data.serviceId}">
+                                <i class="fas fa-trash-alt"></i> Remove
+                                </button>`;
+                    },
+                    orderable: false
+                }
+            ],
+            createdRow: function (row, data, dataIndex) {
+                $(row).attr('data-service-id', data.serviceId);
+            }
+        });
+
+        function refreshSelectedServicesTable() {
+            servicesTable.clear().rows.add(selectedServices).draw();
+
+            if (selectedServices.length > 0) {
+                $('#selectedServicesTable').closest('.table-responsive').show();
+            } else {
+                $('#selectedServicesTable').closest('.table-responsive').hide();
+            }
         }
-    }
 
-        
-        
-        
-    
-    function loadRatePlan(planId) {
+        function loadRatePlan(planId) {
+            $.ajax({
+                url: '${pageContext.request.contextPath}/api/rate-plans/' + planId,
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + getAuthToken()
+                },
+                success: function (data) {
+                    $('#planId').val(data.planId);
+                    $('#planName').val(data.planName);
+                    $('#description').val(data.description || '');
+                    $('#monthlyFee').val(parseFloat(data.monthlyFee).toFixed(2));
+
+                    if (data.isCug) {
+                        $('#isCug').prop('checked', true).trigger('change');
+                        $('#maxCugMembers').val(data.maxCugMembers);
+                        $('#cugUnit').val(data.cugUnit);
+                    }
+
+                    // Load services for this plan
+                    $.ajax({
+                        url: '${pageContext.request.contextPath}/api/rate-plans/' + planId + '/services',
+                        method: 'GET',
+                        headers: {
+                            'Authorization': 'Bearer ' + getAuthToken()
+                        },
+                        success: function (services) {
+                            selectedServices = services;
+                            services.forEach(s => addedServiceIds.add(s.serviceId));
+                            refreshSelectedServicesTable();
+                        },
+                        error: function (xhr) {
+                            handleApiError(xhr);
+                        }
+                    });
+                },
+                error: function (xhr) {
+                    handleApiError(xhr);
+                }
+            });
+        }
+
+        function loadAvailableServices() {
+            $('#serviceSelect').prop('disabled', true).html('<option value="">Loading services...</option>');
+
+            $.ajax({
+                url: '${pageContext.request.contextPath}/api/rate-plans/services/available',
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + getAuthToken()
+                },
+                success: function (services) {
+                    allServices = services;
+                    const select = $('#serviceSelect');
+                    select.empty().append('<option value="">Select a service to add</option>');
+
+                    services.forEach(service => {
+                        select.append(new Option(
+                                service.serviceName + ' (' + service.serviceType + ')',
+                                service.serviceId
+                                ));
+                    });
+
+                    select.prop('disabled', false);
+                },
+                error: function (xhr) {
+                    handleApiError(xhr);
+                    $('#serviceSelect').prop('disabled', false)
+                            .html('<option value="">Error loading services</option>');
+                }
+            });
+        }
+
+
+
+
+
+
+        function createRatePlan(ratePlanData) {
+    $('#saveBtn').prop('disabled', true)
+        .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...');
+
     $.ajax({
-        url: '${pageContext.request.contextPath}/api/rate-plans/' + planId,
-        method: 'GET',
+        url: '${pageContext.request.contextPath}/api/rate-plans',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(ratePlanData),
         headers: {
             'Authorization': 'Bearer ' + getAuthToken()
         },
         success: function (data) {
-            console.log("Rate plan data:", data);
-            
-            $('#planName').val(data.planName);
-            $('#description').val(data.description);
-            $('#monthlyFee').val(data.monthlyFee);
-
-            // Handle boolean conversion safely - using the 'cug' field from response
-            const isCug = data.cug === true || data.cug === 1 || 
-                         (typeof data.cug === 'string' && 
-                          (data.cug.toLowerCase() === 'true' || data.cug === 't'));
-            
-            $('#isCug').prop('checked', isCug).trigger('change');
-            
-            if (isCug) {
-                $('#maxCugMembers').val(data.maxCugMembers || '');
-                $('#cugUnit').val(data.cugUnit || '');
-            }
-
-            // Mark selected services
-            if (data.servicePackages && data.servicePackages.length > 0) {
-                data.servicePackages.forEach(service => {
-                    $(`#service-${service.serviceId}`).prop('checked', true);
-                });
-            }
+            showAlert('success', 'Rate plan created successfully!');
+            setTimeout(() => {
+                window.location.href = 'view.jsp?id=' + data.planId;
+            }, 1500);
         },
         error: function (xhr) {
+            $('#saveBtn').prop('disabled', false)
+                .html('<i class="fas fa-save"></i> Save Rate Plan');
             handleApiError(xhr);
         }
     });
 }
-        
-        
-        
-    function loadAvailableServices() {
-        $.ajax({
-            url: '${pageContext.request.contextPath}/api/rate-plans/services/available',
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + getAuthToken()
-            },
-            success: function (data) {
-                const serviceList = $('#serviceList');
-                serviceList.empty();
 
-                if (data && data.length > 0) {
-                    data.forEach(service => {
-                        const isFree = service.freeUnite;
-                        const freeStatusClass = isFree ? 'yes' : 'no';
-                        const freeFeeDisplay = isFree ? ` | Fee: EGP ${service.freeUnitMonthlyFee || 0}` : '';
 
-                        const serviceItem = $(`
-                            <div class="service-item">
-                                <input type="checkbox" class="form-check-input service-checkbox" 
-                                       id="service-${service.serviceId}" 
-                                       name="serviceIds" value="${service.serviceId}">
-                                <label for="service-${service.serviceId}" class="form-check-label">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold">${service.serviceName}</span>
-                                        <span class="badge bg-secondary service-type-badge">${service.serviceType}</span>
-                                    </div>
-                                    <div class="service-details">
-                                        ${service.qouta || 0} ${service.unitDescription || 'units'} | 
-                                        ${service.serviceNetworkZone || 'Unknown'} | 
-                                        <span class="free-status ${freeStatusClass}">
-                                            Free: ${isFree ? 'Yes' : 'No'}${freeFeeDisplay}
-                                        </span>
-                                    </div>
-                                </label>
-                            </div>
-                        `);
-                        serviceList.append(serviceItem);
-                    });
-                } else {
-                    serviceList.html('<div class="text-center py-3">No services available</div>');
+
+
+
+
+
+
+
+
+
+
+
+
+
+        function updateRatePlan(ratePlanData) {
+            $('#saveBtn').prop('disabled', true)
+                    .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...');
+
+            ratePlanData.planId = parseInt(planId);
+
+            $.ajax({
+                url: '${pageContext.request.contextPath}/api/rate-plans/' + planId,
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(ratePlanData),
+                headers: {
+                    'Authorization': 'Bearer ' + getAuthToken()
+                },
+                success: function (data) {
+                    showAlert('success', 'Rate plan updated successfully!');
+                    setTimeout(() => {
+                        window.location.href = 'view.jsp?id=' + data.planId;
+                    }, 1500);
+                },
+                error: function (xhr) {
+                    $('#saveBtn').prop('disabled', false)
+                            .html('<i class="fas fa-save"></i> Save Rate Plan');
+                    handleApiError(xhr);
                 }
-            },
-            error: function (xhr) {
-                console.error("Error loading services:", xhr);
-                $('#serviceList').html(`
-                    <div class="alert alert-danger">
-                        Error loading services. Status: ${xhr.status}
-                        ${xhr.responseText ? '<br>' + xhr.responseText : ''}
-                    </div>
-                `);
-            }
-        });
-    }
-
-    function validateForm() {
-        const form = document.getElementById('ratePlanForm');
-        if (!form.checkValidity()) {
-            $(form).addClass('was-validated');
-            return false;
+            });
         }
 
-        // Additional validation for CUG fields if CUG is enabled
-        if ($('#isCug').is(':checked')) {
-            if (!$('#maxCugMembers').val() || $('#maxCugMembers').val() <= 0) {
-                $('#maxCugMembers').addClass('is-invalid');
+        function validateForm() {
+            const form = document.getElementById('ratePlanForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
                 return false;
             }
-            if (!$('#cugUnit').val() || $('#cugUnit').val() <= 0) {
-                $('#cugUnit').addClass('is-invalid');
+
+            if ($('#isCug').is(':checked')) {
+                if (!$('#maxCugMembers').val() || $('#maxCugMembers').val() <= 0) {
+                    showAlert('danger', 'Please enter a valid max CUG members value (greater than 0)');
+                    return false;
+                }
+
+                if (!$('#cugUnit').val() || $('#cugUnit').val() <= 0) {
+                    showAlert('danger', 'Please enter a valid CUG unit value (greater than 0)');
+                    return false;
+                }
+            }
+
+            if (selectedServices.length === 0) {
+                showAlert('warning', 'Please add at least one service to the rate plan');
                 return false;
             }
+
+            return true;
         }
 
-        return true;
-    }
+        function getAuthToken() {
+            return localStorage.getItem('authToken') || '';
+        }
 
-   
-   
-    function saveRatePlan() {
-    const planId = $('#planId').val();
-    const method = planId ? 'PUT' : 'POST';
-    const url = planId
-            ? '${pageContext.request.contextPath}/api/rate-plans/' + planId
-            : '${pageContext.request.contextPath}/api/rate-plans';
+        function handleApiError(xhr) {
+            console.error('API Error:', xhr);
+            let message = 'An error occurred';
 
-    // Collect selected service IDs
-    const serviceIds = [];
-    $('input[name="serviceIds"]:checked').each(function () {
-        serviceIds.push(parseInt($(this).val()));
-    });
-
-    const requestData = {
-        planName: $('#planName').val(),
-        description: $('#description').val(),
-        monthlyFee: parseFloat($('#monthlyFee').val()),
-        isCug: $('#isCug').is(':checked'),
-        maxCugMembers: $('#isCug').is(':checked') ? parseInt($('#maxCugMembers').val()) : 0,
-        cugUnit: $('#isCug').is(':checked') ? parseInt($('#cugUnit').val()) : 0,
-        serviceIds: serviceIds
-    };
-
-    $.ajax({
-        url: url,
-        method: method,
-        contentType: 'application/json',
-        headers: {
-            'Authorization': 'Bearer ' + getAuthToken()
-        },
-        data: JSON.stringify(requestData),
-        success: function (data) {
-            showAlert('success', `Rate plan ${planId ? 'updated' : 'created'} successfully!`);
-            if (!planId) {
-                setTimeout(() => {
-                    window.location.href = `form.jsp?id=${data.planId}`;
-                }, 1500);
+            if (xhr.status === 403) {
+                message = 'Your session has expired. Please login again.';
+                clearAuthTokens();
+                setTimeout(function () {
+                    window.location.href = '${pageContext.request.contextPath}/login.jsp';
+                }, 2000);
+            } else if (xhr.status === 400) {
+                // Try to parse the response for more detailed error message
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    message = 'Validation error: ' + (response.message || xhr.responseText || 'Invalid data');
+                } catch (e) {
+                    message = 'Validation error: ' + (xhr.responseText || 'Invalid data');
+                }
+            } else if (xhr.status === 404) {
+                message = 'Resource not found';
+            } else if (xhr.status === 500) {
+                message = 'Server error: ' + (xhr.responseJSON?.message || xhr.statusText);
             }
-        },
-        error: function (xhr) {
-            if (xhr.status === 400) {
-                showAlert('danger', 'Validation error: ' + xhr.responseText);
-            } else {
-                handleApiError(xhr);
+
+            showAlert('danger', message);
+        }
+
+        function clearAuthTokens() {
+            localStorage.removeItem('authToken');
+            document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        }
+
+        function showAlert(type, message) {
+            const alertId = 'alert-' + Date.now();
+            const alertHtml = `
+                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>`;
+
+            $('#alertContainer').html(alertHtml);
+
+            if (type !== 'danger') {
+                setTimeout(() => $(`#${alertId}`).alert('close'), 5000);
             }
         }
     });
-}
-
-    function getAuthToken() {
-        return localStorage.getItem('authToken') || '';
-    }
-
-    function handleApiError(xhr) {
-        console.error('API Error:', xhr);
-        var message = 'An error occurred';
-
-        if (xhr.status === 403) {
-            message = 'Your session has expired. Please login again.';
-            clearAuthTokens();
-            setTimeout(function () {
-                window.location.href = '${pageContext.request.contextPath}/login.jsp';
-            }, 2000);
-        } else if (xhr.status === 400) {
-            message = 'Validation error: ' + (xhr.responseJSON ? xhr.responseJSON.message : 'Invalid data');
-        } else if (xhr.status === 404) {
-            message = 'Rate plan not found';
-        } else if (xhr.status === 500) {
-            message = 'Server error: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.statusText);
-        }
-
-        showAlert('danger', message);
-    }
-
-    function clearAuthTokens() {
-        localStorage.removeItem('authToken');
-        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    }
-
-    function showAlert(type, message) {
-        var alertId = 'alert-' + Date.now();
-        var alertHtml = '<div id="' + alertId + '" class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
-                message +
-                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                '</div>';
-
-        $('#alertContainer').html(alertHtml);
-
-        if (type !== 'danger') {
-            setTimeout(function () {
-                $('#' + alertId).alert('close');
-            }, 5000);
-        }
-    }
 </script>
 
 <%@ include file="../includes/footer.jsp" %>

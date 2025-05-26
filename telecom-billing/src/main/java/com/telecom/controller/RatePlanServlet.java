@@ -1,5 +1,6 @@
 package com.telecom.controller;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.telecom.dao.RatePlanDAO;
 import com.telecom.dao.ServicePackageDAO;
 import com.telecom.model.RatePlan;
@@ -227,7 +228,9 @@ public class RatePlanServlet {
         private String planName;
         private String description;
         private BigDecimal monthlyFee;
-        private boolean isCug;
+        
+        @JsonProperty("isCug") // Add this annotation
+        private boolean cug;
         private int maxCugMembers;
         private int cugUnit;
         private List<Integer> serviceIds;
@@ -239,8 +242,8 @@ public class RatePlanServlet {
         public void setDescription(String description) { this.description = description; }
         public BigDecimal getMonthlyFee() { return monthlyFee; }
         public void setMonthlyFee(BigDecimal monthlyFee) { this.monthlyFee = monthlyFee; }
-        public boolean isCug() { return isCug; }
-        public void setCug(boolean cug) { isCug = cug; }
+        public boolean isCug() { return cug; }
+        public void setCug(boolean cug) { this.cug = cug; }
         public int getMaxCugMembers() { return maxCugMembers; }
         public void setMaxCugMembers(int maxCugMembers) { this.maxCugMembers = maxCugMembers; }
         public int getCugUnit() { return cugUnit; }

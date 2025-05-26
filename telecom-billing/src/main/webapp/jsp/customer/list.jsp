@@ -119,6 +119,7 @@
 </div>
 
 <script>
+    var table;
     $(document).ready(function() {
         // Load customer stats
         loadCustomerStats();
@@ -144,11 +145,17 @@ $.ajax({
 
         
   function initializeCustomersTable() {
-    var table = $('#customersTable').DataTable({
+    table = $('#customersTable').DataTable({
         responsive: true,
         ajax: {
-            url: '${pageContext.request.contextPath}/api/customers',
-            dataSrc: '',
+            url: 'http://localhost:8080/telecom-billing/api/customers',
+            dataSrc: function(json) {
+                // Store the full API response to access nested objects like ratePlan in render functions
+                return json.map(function(item) {
+                    item.customer._fullData = item; // attach full object for later access
+                    return item.customer;
+                });
+            },
             headers: {
                 'Authorization': 'Bearer ' + getAuthToken()
             },
@@ -168,7 +175,7 @@ $.ajax({
                     if (status === 'ACTIVE') badgeClass = 'bg-success';
                     else if (status === 'SUSPENDED') badgeClass = 'bg-warning';
                     else if (status === 'INACTIVE') badgeClass = 'bg-danger';
-                    
+
                     return '<span class="badge ' + badgeClass + '">' + status + '</span>';
                 }
             },
@@ -179,14 +186,10 @@ $.ajax({
                 }
             },
             {
-                data: 'planId',
-                render: function(planId, type, row) {
-                    if (planId && planNamesCache[planId]) {
-                        return '<span class="badge bg-info">' + planNamesCache[planId] + '</span>';
-                    } else if (planId) {
-                        return '<span class="badge bg-secondary">Plan #' + planId + '</span>';
-                    }
-                    return 'None';
+                data: null,
+                render: function(row) {
+                    const planName = row._fullData?.ratePlan?.planName || 'None';
+                    return '<span class="badge bg-info">' + planName + '</span>';
                 }
             },
             {

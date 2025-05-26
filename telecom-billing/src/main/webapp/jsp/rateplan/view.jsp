@@ -117,7 +117,7 @@
                 $('#planName').text(data.planName);
                 $('#description').text(data.description || 'N/A');
                 $('#monthlyFee').text('EGP ' + parseFloat(data.monthlyFee).toFixed(2));
-                $('#isCug').text(data.cug ? 'Yes' : 'No');
+                $('#isCug').text(data.isCug ? 'Yes' : 'No');
                 $('#createdAt').text(new Date(data.createdAt).toLocaleString());
                 $('#editBtn').attr('href', 'form.jsp?id=' + data.planId);
 

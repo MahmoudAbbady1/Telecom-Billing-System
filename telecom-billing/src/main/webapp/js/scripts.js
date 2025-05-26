@@ -3,7 +3,12 @@ $(document).ready(function() {
     // Initialize DataTables
     $('.datatable').DataTable({
         "pageLength": 25,
-        "responsive": true
+        "responsive": true,
+        "language": {
+            "search": "Search:",
+            "lengthMenu": "Show _MENU_ entries per page",
+            "info": "Showing _START_ to _END_ of _TOTAL_ entries"
+        }
     });
 
     // Form Validation
@@ -27,29 +32,48 @@ $(document).ready(function() {
     });
 
     // Confirm before delete
-    $('.confirm-delete').on('click', function() {
-        return confirm('Are you sure you want to delete this record?');
+    $('.confirm-delete').on('click', function(e) {
+        e.preventDefault();
+        const deleteUrl = $(this).attr('href');
+        if (confirm('Are you sure you want to delete this record?')) {
+            window.location.href = deleteUrl;
+        }
     });
 
     // AJAX Customer Search
     $('#customerSearch').on('keyup', function() {
         const searchTerm = $(this).val();
         if (searchTerm.length > 2) {
-            $.get('/customers?action=search&searchTerm=' + searchTerm, function(data) {
-                $('#customerTable').html(data);
+            $.ajax({
+                url: '${pageContext.request.contextPath}/customers',
+                type: 'GET',
+                data: {
+                    action: 'search',
+                    searchTerm: searchTerm
+                },
+                success: function(data) {
+                    $('#customerTable').html(data);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Search error:', error);
+                }
             });
         }
     });
+
+    // Initialize tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
+
+    // Initialize popovers
+    $('[data-bs-toggle="popover"]').popover();
+
+    // Format numbers with commas
+function formatNumber(number) {
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+    // Format currency
+    function formatCurrency(amount) {
+        return '$' + formatNumber(amount.toFixed(2));
+    }
 });
-
-// Helper function for formatting numbers
-function formatCurrency(amount) {
-    
-    const pattern = /\d(?=(\d{3})+\./g;
-    return '$' + parseFloat(amount).toFixed(2).replace(pattern, '$&,');
-}
-
-// PDF Download Handler
-function downloadInvoice(invoiceId) {
-    window.location.href = '/invoices?action=download&id=' + invoiceId;
-}

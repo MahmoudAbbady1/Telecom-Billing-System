@@ -11,13 +11,15 @@
 
 <!-- Quick Stats -->
 <div class="row mb-4">
+
+
     <div class="col-md-4">
         <div class="card dashboard-card quick-stats">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-muted mb-2">Active Customers</h6>
-                        <h3 class="mb-0">1,248</h3>
+                        <h6 class="text-muted mb-2">Total Customers</h6>
+                        <h3 class="mb-0" id="totalCount">0</h3>
                     </div>
                     <div class="card-icon bg-light bg-opacity-10 p-3 rounded-circle">
                         <i class="fas fa-users"></i>
@@ -32,11 +34,12 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-muted mb-2">Pending Invoices</h6>
-                        <h3 class="mb-0">87</h3>
+                        <h6 class="text-muted mb-2">Active Customers</h6>
+                        <h3 class="mb-0" id="activeCount">0</h3>
+
                     </div>
                     <div class="card-icon bg-light bg-opacity-10 p-3 rounded-circle">
-                        <i class="fas fa-file-invoice"></i>
+                        <i class="fas fa-user-check"></i>
                     </div>
                 </div>
             </div>
@@ -62,43 +65,43 @@
     </div>
 
 
-<!-- Quick Actions & Profile -->
-<div class="col-lg-12">
-    <div class="row mb-4">
-        <div class="card dashboard-card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <a href="../invoice/list.jsp" class="btn-outline-primary">
-                        <button class="btn btn-outline-primary me-2">
-                            <i class="fas fa-plus me-2"></i>Create New Invoice
-                        </button>
-                    </a>
-                    
-                    <a href="../customer/form.jsp" class="btn-outline-primary">
-                        <button class="btn btn-outline-primary me-2">
-                            <i class="fas fa-user-plus me-2"></i>Add Customer
-                        </button>
-                    </a>
-                    
-                    <a href="../rateplan/form.jsp" class="btn-outline-primary">
-                        <button class="btn btn-outline-primary me-2">
-                            <i class="fas fa-file-import me-2"></i>Create new Rate Plan
-                        </button>
-                    </a>
-                    
-                    <a href="../service-package/form.jsp" class="btn-outline-primary">
-                        <button class="btn btn-outline-primary">
-                            <i class="fas fa-chart-pie me-2"></i>New Service Package
-                        </button>
-                    </a>
+    <!-- Quick Actions & Profile -->
+    <div class="col-lg-12">
+        <div class="row mb-4">
+            <div class="card dashboard-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <a href="../invoice/list.jsp" class="btn-outline-primary">
+                            <button class="btn btn-outline-primary me-2">
+                                <i class="fas fa-plus me-2"></i>Create New Invoice
+                            </button>
+                        </a>
+
+                        <a href="../customer/form.jsp" class="btn-outline-primary">
+                            <button class="btn btn-outline-primary me-2">
+                                <i class="fas fa-user-plus me-2"></i>Add Customer
+                            </button>
+                        </a>
+
+                        <a href="../rateplan/form.jsp" class="btn-outline-primary">
+                            <button class="btn btn-outline-primary me-2">
+                                <i class="fas fa-file-import me-2"></i>Create new Rate Plan
+                            </button>
+                        </a>
+
+                        <a href="../service-package/form.jsp" class="btn-outline-primary">
+                            <button class="btn btn-outline-primary">
+                                <i class="fas fa-chart-pie me-2"></i>New Service Package
+                            </button>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
 
 
@@ -166,8 +169,8 @@
 </main>
 </div>
 </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // Activate the current nav item
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -180,19 +183,44 @@
     document.addEventListener('DOMContentLoaded', function () {
         const hour = new Date().getHours();
         let greeting;
-
-        if (hour < 12)
+        if (hour < 12) {
             greeting = "Good morning";
-        else if (hour < 18)
+        } else if (hour < 18) {
             greeting = "Good afternoon";
-        else
+        } else {
             greeting = "Good evening";
+        }
 
         const welcomeHeader = document.querySelector('.welcome-hero h1');
         if (welcomeHeader) {
-            welcomeHeader.textContent = `${greeting}, "Mahmoud Ibrahim;
-                    }
-                });
+            welcomeHeader.textContent = `${greeting} Welcome Back, Mahmoud Ibrahim`;
+        }
+    });
+
+
+    // Fetch Active Customer Count
+    $(document).ready(function () {
+        $.ajax({
+            url: '${pageContext.request.contextPath}/api/customers/stats',
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + getAuthToken() // Ensure this function returns your JWT token
+            },
+            success: function (data) {
+                $('#totalCount').text(data.TOTAL || 0);
+                $('#activeCount').text(data.ACTIVE || 0);
+            },
+            error: function (xhr) {
+                console.error("Failed to load active customers:", xhr);
+            }
+        });
+    });
+
+    // Dummy getAuthToken function (replace with real logic if needed)
+    function getAuthToken() {
+        return localStorage.getItem("authToken") || "";
+    }
 </script>
+
 </body>
 </html>

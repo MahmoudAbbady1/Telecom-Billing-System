@@ -4,8 +4,10 @@ import com.telecom.dao.CustomerDAO;
 import com.telecom.dao.RatePlanDAO;
 import com.telecom.dao.ServicePackageDAO;
 import com.telecom.model.Customer;
+import com.telecom.model.CustomerDetailsDTO;
 import com.telecom.model.RatePlan;
 import com.telecom.model.ServicePackage;
+import java.util.ArrayList;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -27,36 +29,57 @@ public class CustomerServlet {
         ratePlanDAO = new RatePlanDAO();
     }
 
-    @GET
-    public Response getAllCustomers() {
-        try {
-            List<Customer> customers = customerDAO.getAllCustomers();
-            return Response.ok(customers).build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Error retrieving customers: " + e.getMessage())
-                    .build();
-        }
-    }
 
+
+    
+    
     @GET
-    @Path("/{id}")
-    public Response getCustomerById(@PathParam("id") int id) {
-        try {
-            Customer customer = customerDAO.getCustomerById(id);
-            if (customer != null) {
-                return Response.ok(customer).build();
-            } else {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity("Customer not found with id: " + id)
-                        .build();
-            }
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Error retrieving customer: " + e.getMessage())
+@Path("/{id}")
+public Response getCustomerById(@PathParam("id") int id) {
+    try {
+        Customer customer = customerDAO.getCustomerById(id);
+        if (customer != null) {
+            // Get rate plan with its services
+            RatePlan ratePlan = customerDAO.getRatePlanDetails(customer.getPlanId());
+            // Get just the selected free unit
+            ServicePackage freeUnit = customerDAO.getFreeUnitDetails(customer.getFreeUnitId());
+            
+            // Create the simplified DTO
+            CustomerDetailsDTO customerDetails = new CustomerDetailsDTO(customer, ratePlan, freeUnit);
+            
+            return Response.ok(customerDetails).build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Customer not found with id: " + id)
                     .build();
         }
+    } catch (Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Error retrieving customer: " + e.getMessage())
+                .build();
     }
+}
+
+@GET
+public Response getAllCustomers() {
+    try {
+        List<Customer> customers = customerDAO.getAllCustomers();
+        List<CustomerDetailsDTO> customerDetailsList = new ArrayList<>();
+        
+        for (Customer customer : customers) {
+            RatePlan ratePlan = customerDAO.getRatePlanDetails(customer.getPlanId());
+            ServicePackage freeUnit = customerDAO.getFreeUnitDetails(customer.getFreeUnitId());
+            
+            customerDetailsList.add(new CustomerDetailsDTO(customer, ratePlan, freeUnit));
+        }
+        
+        return Response.ok(customerDetailsList).build();
+    } catch (Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Error retrieving customers: " + e.getMessage())
+                .build();
+    }
+}
 
     @POST
     public Response createCustomer(Customer customer) {

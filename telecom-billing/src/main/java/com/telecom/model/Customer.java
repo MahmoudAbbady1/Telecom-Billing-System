@@ -14,20 +14,22 @@ public class Customer {
     private String status;
     private Timestamp registrationDate;
     private int planId;
-    private int freeUnitId;
+    private Integer freeUnitId; // Changed to Integer to handle null
     private int promotionPackage;
     private String occName;
     private int occPrice;
     private int monthsNumberInstallments;
     private int[] cugNumbers;
-
+//    private double priceOccPerMonth; // Added new field
+    
     public Customer() {
     }
 
     public Customer(int customerId, String nid, String name, String phone, int creditLimit, 
                    String email, String address, String status, Timestamp registrationDate, 
-                   int planId, int freeUnitId, int promotionPackage, String occName, 
-                   int occPrice, int monthsNumberInstallments, int[] cugNumbers) {
+                   int planId, Integer freeUnitId, int promotionPackage, String occName, 
+                   int occPrice, int monthsNumberInstallments, int[] cugNumbers 
+                ) {
         this.customerId = customerId;
         this.nid = nid;
         this.name = name;
@@ -44,6 +46,20 @@ public class Customer {
         this.occPrice = occPrice;
         this.monthsNumberInstallments = monthsNumberInstallments;
         this.cugNumbers = cugNumbers;
+    }
+
+    // Updated getters and setters
+
+
+
+
+    // Change freeUnitId getter/setter to Integer
+    public Integer getFreeUnitId() {
+        return freeUnitId;
+    }
+
+    public void setFreeUnitId(Integer freeUnitId) {
+        this.freeUnitId = freeUnitId;
     }
 
     // Getters and Setters
@@ -127,9 +143,7 @@ public class Customer {
         this.planId = planId;
     }
 
-    public int getFreeUnitId() {
-        return freeUnitId;
-    }
+
 
     public void setFreeUnitId(int freeUnitId) {
         this.freeUnitId = freeUnitId;

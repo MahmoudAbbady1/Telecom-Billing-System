@@ -53,7 +53,7 @@
                     }
                 },
                 {
-                    data: 'cug',
+                    data: 'isCug',
                     render: function(cug) {
                         return cug ? 
                             '<span class="badge bg-success">Yes</span>' : 

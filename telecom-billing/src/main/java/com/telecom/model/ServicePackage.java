@@ -1,5 +1,6 @@
 package com.telecom.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
@@ -10,13 +11,20 @@ public class ServicePackage {
     private String serviceNetworkZone;
     private int qouta;
     private String unitDescription;
-    private boolean isFreeUnite;
+
+    @JsonProperty("freeUnite")
+    private boolean freeUnite;
+
+    @JsonProperty("freeUnitMonthlyFee")
     private BigDecimal freeUnitMonthlyFee;
+
     private Timestamp createdAt;
 
     public ServicePackage() {
+        this.freeUnitMonthlyFee = BigDecimal.ZERO;
     }
 
+    // Getters and Setters
     public int getServiceId() {
         return serviceId;
     }
@@ -66,11 +74,11 @@ public class ServicePackage {
     }
 
     public boolean isFreeUnite() {
-        return isFreeUnite;
+        return freeUnite;
     }
 
     public void setFreeUnite(boolean freeUnite) {
-        isFreeUnite = freeUnite;
+        this.freeUnite = freeUnite;
     }
 
     public BigDecimal getFreeUnitMonthlyFee() {
@@ -79,6 +87,10 @@ public class ServicePackage {
 
     public void setFreeUnitMonthlyFee(BigDecimal freeUnitMonthlyFee) {
         this.freeUnitMonthlyFee = freeUnitMonthlyFee;
+    }
+
+    public void setFreeUnitMonthlyFee(double fee) {
+        this.freeUnitMonthlyFee = BigDecimal.valueOf(fee);
     }
 
     public Timestamp getCreatedAt() {
@@ -98,7 +110,7 @@ public class ServicePackage {
                 ", serviceNetworkZone='" + serviceNetworkZone + '\'' +
                 ", qouta=" + qouta +
                 ", unitDescription='" + unitDescription + '\'' +
-                ", isFreeUnite=" + isFreeUnite +
+                ", freeUnite=" + freeUnite +
                 ", freeUnitMonthlyFee=" + freeUnitMonthlyFee +
                 ", createdAt=" + createdAt +
                 '}';

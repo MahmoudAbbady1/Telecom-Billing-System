@@ -8,7 +8,7 @@
         <button class="btn btn-primary" data-toggle="modal" data-target="#uploadModal">
             Upload CDR File
         </button>
-        <a href="cdrs?action=process" class="btn btn-success">Process CDRs</a>
+        <a href="#" id="processCdrsBtn" class="btn btn-success">Process CDRs</a>
     </div>
 </div>
 
@@ -19,10 +19,10 @@
             <div class="modal-header">
                 <h5 class="modal-title">Upload CDR File</h5>
                 <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
+                    <span>×</span>
                 </button>
             </div>
-            <form action="cdrs" method="post" enctype="multipart/form-data">
+            <form id="uploadForm" action="${pageContext.request.contextPath}/api/cdrs" method="post" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Select CDR File (CSV format)</label>
@@ -40,44 +40,100 @@
 
 <div class="card">
     <div class="card-body">
-        <table class="table table-striped datatable">
+        <table class="table table-striped datatable" id="cdrTable">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Dial A</th>
-                    <th>Dial B</th>
-                    <th>Service</th>
-                    <th>Quantity</th>
-                    <th>Start Time</th>
+                    <th>Customer-CDR</th>
                     <th>Processed</th>
                 </tr>
             </thead>
             <tbody>
-                <c:forEach var="cdr" items="${cdrs}">
-                    <tr>
-                        <td>${cdr.cdrId}</td>
-                        <td>${cdr.dialA}</td>
-                        <td>${cdr.dialB}</td>
-                        <td>
-                            <c:choose>
-                                <c:when test="${cdr.serviceId == 1}">Voice</c:when>
-                                <c:when test="${cdr.serviceId == 2}">SMS</c:when>
-                                <c:when test="${cdr.serviceId == 3}">Data</c:when>
-                                <c:otherwise>Unknown</c:otherwise>
-                            </c:choose>
-                        </td>
-                        <td>${cdr.quantity}</td>
-                        <td>${cdr.startTime}</td>
-                        <td>
-                            <span class="badge badge-${cdr.processed ? 'success' : 'warning'}">
-                                ${cdr.processed ? 'Yes' : 'No'}
-                            </span>
-                        </td>
-                    </tr>
-                </c:forEach>
             </tbody>
         </table>
     </div>
 </div>
+
+<script src="${pageContext.request.contextPath}/webjars/jquery/3.6.0/jquery.min.js"></script>
+<script src="${pageContext.request.contextPath}/webjars/datatables/1.10.20/js/jquery.dataTables.min.js"></script>
+<script src="${pageContext.request.contextPath}/webjars/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Verify jQuery version
+    console.log('jQuery version:', $.fn.jquery);
+
+    // Initialize DataTable only if not already initialized
+    var table = $('#cdrTable').DataTable();
+    if (!$.fn.DataTable.isDataTable('#cdrTable')) {
+        table = $('#cdrTable').DataTable({
+            ajax: {
+                url: '${pageContext.request.contextPath}/api/cdrs',
+                dataSrc: '',
+                error: function(xhr, error, thrown) {
+                    console.error('DataTable AJAX error:', xhr, error, thrown);
+                    var errorMessage = xhr.responseJSON && xhr.responseJSON.message 
+                        ? xhr.responseJSON.message 
+                        : 'Failed to load CDR data: ' + thrown;
+                    alert('Error: ' + errorMessage);
+                }
+            },
+            columns: [
+                { data: 'filename' },
+                { 
+                    data: 'processed',
+                    render: function(data) {
+                        return data ? 'Processed' : 'Not Processed';
+                    }
+                }
+            ]
+        });
+    } else {
+        // Reload data if table already initialized
+        table.ajax.reload();
+    }
+
+    // Handle Process CDRs button click
+    $('#processCdrsBtn').click(function(e) {
+        e.preventDefault();
+        $.ajax({
+            url: '${pageContext.request.contextPath}/api/cdrs/process',
+            method: 'GET',
+            success: function(response) {
+                alert(response.message);
+                table.ajax.reload();
+            },
+            error: function(xhr) {
+                var errorMessage = xhr.responseJSON && xhr.responseJSON.message 
+                    ? xhr.responseJSON.message 
+                    : 'Failed to process CDRs';
+                alert('Error processing CDRs: ' + errorMessage);
+            }
+        });
+    });
+
+    // Handle form submission with AJAX
+    $('#uploadForm').submit(function(e) {
+        e.preventDefault();
+        var formData = new FormData(this);
+        $.ajax({
+            url: '${pageContext.request.contextPath}/api/cdrs',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                alert(response.message);
+                $('#uploadModal').modal('hide');
+                table.ajax.reload();
+            },
+            error: function(xhr) {
+                var errorMessage = xhr.responseJSON && xhr.responseJSON.message 
+                    ? xhr.responseJSON.message 
+                    : 'Failed to upload CDR';
+                alert('Error uploading CDR: ' + errorMessage);
+            }
+        });
+    });
+});
+</script>
 
 <%@ include file="../includes/footer.jsp" %>

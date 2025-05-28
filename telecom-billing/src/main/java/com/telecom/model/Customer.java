@@ -14,22 +14,20 @@ public class Customer {
     private String status;
     private Timestamp registrationDate;
     private int planId;
-    private Integer freeUnitId; // Changed to Integer to handle null
+    private Integer freeUnitId;
     private int promotionPackage;
     private String occName;
     private int occPrice;
     private int monthsNumberInstallments;
-    private int[] cugNumbers;
-//    private double priceOccPerMonth; // Added new field
-    
+    private String[] cugNumbers;
+
     public Customer() {
     }
 
-    public Customer(int customerId, String nid, String name, String phone, int creditLimit, 
-                   String email, String address, String status, Timestamp registrationDate, 
-                   int planId, Integer freeUnitId, int promotionPackage, String occName, 
-                   int occPrice, int monthsNumberInstallments, int[] cugNumbers 
-                ) {
+    public Customer(int customerId, String nid, String name, String phone, int creditLimit,
+                    String email, String address, String status, Timestamp registrationDate,
+                    int planId, Integer freeUnitId, int promotionPackage, String occName,
+                    int occPrice, int monthsNumberInstallments, String[] cugNumbers) {
         this.customerId = customerId;
         this.nid = nid;
         this.name = name;
@@ -48,12 +46,6 @@ public class Customer {
         this.cugNumbers = cugNumbers;
     }
 
-    // Updated getters and setters
-
-
-
-
-    // Change freeUnitId getter/setter to Integer
     public Integer getFreeUnitId() {
         return freeUnitId;
     }
@@ -62,7 +54,6 @@ public class Customer {
         this.freeUnitId = freeUnitId;
     }
 
-    // Getters and Setters
     public int getCustomerId() {
         return customerId;
     }
@@ -96,7 +87,9 @@ public class Customer {
     }
 
     public int getCreditLimit() {
-        return creditLimit;
+        return creditLimit
+
+;
     }
 
     public void setCreditLimit(int creditLimit) {
@@ -143,12 +136,6 @@ public class Customer {
         this.planId = planId;
     }
 
-
-
-    public void setFreeUnitId(int freeUnitId) {
-        this.freeUnitId = freeUnitId;
-    }
-
     public int getPromotionPackage() {
         return promotionPackage;
     }
@@ -181,11 +168,11 @@ public class Customer {
         this.monthsNumberInstallments = monthsNumberInstallments;
     }
 
-    public int[] getCugNumbers() {
+    public String[] getCugNumbers() {
         return cugNumbers;
     }
 
-    public void setCugNumbers(int[] cugNumbers) {
+    public void setCugNumbers(String[] cugNumbers) {
         this.cugNumbers = cugNumbers;
     }
 

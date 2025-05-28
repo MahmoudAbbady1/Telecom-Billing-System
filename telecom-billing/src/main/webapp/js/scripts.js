@@ -26,10 +26,10 @@ $(document).ready(function() {
     });
 
     // Date Picker Initialization
-    $('.datepicker').datepicker({
-        format: 'yyyy-mm-dd',
-        autoclose: true
-    });
+//    $('.datepicker').datepicker({
+//        format: 'yyyy-mm-dd',
+//        autoclose: true
+//    });
 
     // Confirm before delete
     $('.confirm-delete').on('click', function(e) {

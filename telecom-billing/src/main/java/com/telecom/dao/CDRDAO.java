@@ -1,111 +1,72 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.telecom.dao;
-
-/**
- *
- * @author mibrahim
- */
 
 import com.telecom.model.CDR;
 import com.telecom.util.DBConnection;
-import java.sql.*;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class CDRDAO {
-    public List<CDR> getRecentCDRs(int limit) throws SQLException {
+    private static final Logger LOGGER = Logger.getLogger(CDRDAO.class.getName());
+    private final DBConnection DBConnection = new DBConnection();
+
+    public void saveCDR(CDR cdr) throws SQLException {
+        String sql = "INSERT INTO cdrs (filename, processed) VALUES (?, ?)";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, cdr.getFilename());
+            stmt.setBoolean(2, cdr.isProcessed());
+            stmt.executeUpdate();
+            LOGGER.info("Saved CDR file: " + cdr.getFilename());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error saving CDR file: " + cdr.getFilename(), e);
+            throw e;
+        }
+    }
+
+    public List<CDR> getAllCDRs() throws SQLException {
         List<CDR> cdrs = new ArrayList<>();
-        String sql = "SELECT * FROM cdr_records ORDER BY start_time DESC LIMIT ?";
-        DBConnection dbConnection = new DBConnection();
-        try (Connection conn = dbConnection.getConnection();
+        String sql = "SELECT id, filename, processed FROM cdrs";
+        LOGGER.info("Executing query: " + sql);
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                CDR cdr = new CDR();
+                cdr.setId(rs.getInt("id"));
+                cdr.setFilename(rs.getString("filename"));
+                cdr.setProcessed(rs.getBoolean("processed"));
+                cdrs.add(cdr);
+            }
+            LOGGER.info("Retrieved " + cdrs.size() + " CDR records");
+            return cdrs;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error retrieving CDR records", e);
+            throw e;
+        }
+    }
+
+    public void processCDRs() throws SQLException {
+        String sql = "UPDATE cdrs SET processed = ? WHERE processed = ?";
+        LOGGER.info("Executing query: " + sql);
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setInt(1, limit);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    cdrs.add(extractCDRFromResultSet(rs));
-                }
-            }
+            stmt.setBoolean(1, true);
+            stmt.setBoolean(2, false);
+            int rowsAffected = stmt.executeUpdate();
+            LOGGER.info("Processed " + rowsAffected + " CDR records");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error processing CDR records", e);
+            throw e;
         }
-        return cdrs;
-    }
-
-    public List<CDR> getUnbilledCDRsForCustomer(int customerId) throws SQLException {
-        List<CDR> cdrs = new ArrayList<>();
-        String sql = "SELECT c.* FROM cdr_records c " +
-                     "JOIN customer_services cs ON c.service_id = cs.service_id " +
-                     "WHERE cs.customer_id = ? AND c.processed = false";
-        
-        DBConnection dbConnection = new DBConnection();
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setInt(1, customerId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    cdrs.add(extractCDRFromResultSet(rs));
-                }
-            }
-        }
-        return cdrs;
-    }
-
-    public boolean addCDR(CDR cdr) throws SQLException {
-        String sql = "INSERT INTO cdr_records (dial_a, dial_b, service_id, quantity, start_time, external_charges) " +
-                     "VALUES (?, ?, ?, ?, ?, ?)";
-        DBConnection dbConnection = new DBConnection();
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            
-            stmt.setString(1, cdr.getDialA());
-            stmt.setString(2, cdr.getDialB());
-            stmt.setInt(3, cdr.getServiceId());
-            stmt.setDouble(4, cdr.getQuantity());
-            stmt.setTimestamp(5, cdr.getStartTime());
-            stmt.setDouble(6, cdr.getExternalCharges());
-            
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows == 0) {
-                return false;
-            }
-            
-            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    cdr.setCdrId(generatedKeys.getInt(1));
-                }
-            }
-            return true;
-        }
-    }
-
-    public boolean markAsProcessed(int cdrId) throws SQLException {
-        String sql = "UPDATE cdr_records SET processed = true WHERE cdr_id = ?";
-        DBConnection dbConnection = new DBConnection();
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setInt(1, cdrId);
-            return stmt.executeUpdate() > 0;
-        }
-    }
-
-    private CDR extractCDRFromResultSet(ResultSet rs) throws SQLException {
-        CDR cdr = new CDR();
-        cdr.setCdrId(rs.getInt("cdr_id"));
-        cdr.setDialA(rs.getString("dial_a"));
-        cdr.setDialB(rs.getString("dial_b"));
-        cdr.setServiceId(rs.getInt("service_id"));
-        cdr.setQuantity(rs.getDouble("quantity"));
-        cdr.setStartTime(rs.getTimestamp("start_time"));
-        cdr.setExternalCharges(rs.getDouble("external_charges"));
-        cdr.setProcessed(rs.getBoolean("processed"));
-        return cdr;
-    }
-
-    public void updateCDR(CDR cdr) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }

@@ -20,7 +20,6 @@
                     <th>CUG</th>
                     <th>Max Members</th>
                     <th>CUG Units</th>
-                    <!--<th>Created At</th>-->
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -44,12 +43,12 @@
                 }
             },
             columns: [
-                {data: 'planId'},
-                {data: 'planName'},
+                { data: 'planId' },
+                { data: 'planName' },
                 {
                     data: 'monthlyFee',
                     render: function(fee) {
-                        return 'EGP ' + parseFloat(fee).toFixed(2);
+                        return fee ? 'EGP ' + parseFloat(fee).toFixed(2) : 'N/A';
                     }
                 },
                 {
@@ -60,22 +59,48 @@
                             '<span class="badge bg-danger">No</span>';
                     }
                 },
-                {data: 'maxCugMembers'},
-                {data: 'cugUnit'},
-//                {
-//                    data: 'createdAt',
-//                    render: function(createdAt) {
-//                        return new Date(createdAt).toLocaleString();
-//                    }
-//                },
+                { 
+                    data: 'maxCugMembers',
+                    render: function(members) {
+                        return members > 0 ? members : '-';
+                    }
+                },
+                { 
+                    data: 'cugUnit',
+                    render: function(units) {
+                        return units > 0 ? units : '-';
+                    }
+                },
                 {
                     data: null,
                     render: function(data) {
-                        return '<a href="view.jsp?id=' + data.planId + '" class="btn btn-sm btn-info me-1">View</a>' +
-                               '<a href="form.jsp?id=' + data.planId + '" class="btn btn-sm btn-warning">Edit</a>';
+                        return '<a href="view.jsp?id=' + data.planId + '" class="btn btn-sm btn-info me-1" title="View details">View</a>' +
+                               '<a href="form.jsp?id=' + data.planId + '" class="btn btn-sm btn-warning me-1" title="Edit rate plan">Edit</a>' +
+                               '<button class="btn btn-sm btn-danger delete-btn" data-id="' + data.planId + '" title="Delete rate plan">Delete</button>';
                     }
                 }
             ]
+        });
+
+        // Handle delete button click
+        $('#ratePlansTable').on('click', '.delete-btn', function() {
+            var planId = $(this).data('id');
+            if (confirm('Are you sure you want to delete rate plan ID ' + planId + '?')) {
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/api/rate-plans/' + planId,
+                    type: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken()
+                    },
+                    success: function() {
+                        $('#ratePlansTable').DataTable().ajax.reload();
+                        showAlert('success', 'Rate plan deleted successfully');
+                    },
+                    error: function(xhr) {
+                        handleApiError(xhr);
+                    }
+                });
+            }
         });
     });
 
@@ -85,7 +110,7 @@
 
     function handleApiError(xhr) {
         console.error('API Error:', xhr);
-        var message = 'An error occurred while loading rate plans';
+        var message = 'An error occurred while processing your request';
 
         if (xhr.status === 403) {
             message = 'Your session has expired. Please login again.';
@@ -93,6 +118,8 @@
             setTimeout(function() {
                 window.location.href = '${pageContext.request.contextPath}/login.jsp';
             }, 2000);
+        } else if (xhr.status === 404) {
+            message = 'Rate plan not found';
         } else if (xhr.status === 500) {
             message = 'Server error: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.statusText);
         }

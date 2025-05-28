@@ -68,6 +68,11 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link <%= uri.contains("cdr") ? "active" : ""%>" href="../cdr/list.jsp">
+                                    <i class="fas fa-file"></i> CDRs
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link <%= uri.contains("customer") ? "active" : ""%>" href="../customer/list.jsp">
                                     <i class="fas fa-users"></i> Customers
                                 </a>

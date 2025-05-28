@@ -1,20 +1,14 @@
-<web-app version="4.0" 
-         xmlns="http://xmlns.jcp.org/xml/ns/javaee"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
-                             http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd">
-
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="4.0" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee                              http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd">
     <!-- Welcome Files -->
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
-
     <!-- Context Parameters -->
     <context-param>
         <param-name>contextConfigLocation</param-name>
         <param-value>/WEB-INF/applicationContext.xml</param-value>
     </context-param>
-
     <!-- Jersey Servlet for REST API -->
     <servlet>
         <servlet-name>jersey-servlet</servlet-name>
@@ -33,49 +27,45 @@
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
-
     <!-- Other Servlets -->
-
-
     <servlet>
         <servlet-name>CustomerServlet</servlet-name>
         <servlet-class>com.telecom.controller.CustomerServlet</servlet-class>
     </servlet>
-
     <servlet>
         <servlet-name>CDRServlet</servlet-name>
         <servlet-class>com.telecom.controller.CDRServlet</servlet-class>
     </servlet>
-
     <servlet>
         <servlet-name>InvoiceServlet</servlet-name>
         <servlet-class>com.telecom.controller.InvoiceServlet</servlet-class>
     </servlet>
-
     <!-- Servlet Mappings -->
+    <servlet>
+        <servlet-name>DownloadInvoiceServlet</servlet-name>
+        <servlet-class>com.telecom.controller.DownloadInvoiceServlet</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>jersey-servlet</servlet-name>
         <url-pattern>/api/*</url-pattern>
     </servlet-mapping>
-
-
-
     <servlet-mapping>
         <servlet-name>CustomerServlet</servlet-name>
         <url-pattern>/customers/*</url-pattern>
     </servlet-mapping>
-
     <servlet-mapping>
         <servlet-name>CDRServlet</servlet-name>
         <url-pattern>/cdrs/*</url-pattern>
     </servlet-mapping>
-
     <servlet-mapping>
         <servlet-name>InvoiceServlet</servlet-name>
         <url-pattern>/invoices/*</url-pattern>
     </servlet-mapping>
-
     <!-- Session Configuration -->
+    <servlet-mapping>
+        <servlet-name>DownloadInvoiceServlet</servlet-name>
+        <url-pattern>/DownloadInvoiceServlet</url-pattern>
+    </servlet-mapping>
     <session-config>
         <session-timeout>30</session-timeout>
         <cookie-config>
@@ -84,9 +74,8 @@
         </cookie-config>
         <tracking-mode>COOKIE</tracking-mode>
     </session-config>
-
     <!--filter-->
-<!--
+    <!--
     <filter>
         <filter-name>AuthenticationFilter</filter-name>
         <filter-class>com.telecom.filter.AuthenticationFilter</filter-class>
@@ -97,9 +86,6 @@
         <url-pattern>/protected/*</url-pattern>
         <url-pattern>/secured/*</url-pattern>
     </filter-mapping>-->
-
-
-
     <!-- Login Configuration -->
     <login-config>
         <auth-method>FORM</auth-method>
@@ -108,16 +94,12 @@
             <form-error-page>/index.jsp?error=true</form-error-page>
         </form-login-config>
     </login-config>
-    
-    
     <error-page>
-    <error-code>404</error-code>
-    <location>/jsp/error/error404.jsp</location>
-</error-page>
-
-<error-page>
-    <error-code>500</error-code>
-    <location>/jsp/error/error500.jsp</location>
-</error-page>
-
+        <error-code>404</error-code>
+        <location>/jsp/error/error404.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/jsp/error/error500.jsp</location>
+    </error-page>
 </web-app>

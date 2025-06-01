@@ -14,12 +14,13 @@ def get_customer_data():
         # Handle both single customer and list of customers
         customers = data if isinstance(data, list) else [data] if isinstance(data, dict) and "customer" in data else data.get("customers", [])
         
-        # Extract phone numbers, roaming quotas, data service presence, and status
+        # Extract phone numbers, roaming quotas, data service presence, and customer_id
         customer_info = {}
         for item in customers:
             customer = item.get("customer", item)
             if isinstance(customer, dict) and "phone" in customer and customer.get("status") == "ACTIVE":
                 phone = customer["phone"]
+                customer_id = customer.get("customerId")
                 # Fetch roaming quota and check for data service
                 roaming_quota = 0
                 has_data_service = False
@@ -31,6 +32,7 @@ def get_customer_data():
                     if service.get("serviceType") == "DATA":
                         has_data_service = True
                 customer_info[phone] = {
+                    "customer_id": customer_id,
                     "roaming_quota": roaming_quota,
                     "has_data_service": has_data_service
                 }
@@ -40,13 +42,13 @@ def get_customer_data():
         print(f"Error fetching customer data from API: {e}")
         print("Using fallback phone numbers with default roaming quota of 50 minutes and no data service.")
         return {
-            phone: {"roaming_quota": 50, "has_data_service": False} for phone in [
+            phone: {"customer_id": idx + 1, "roaming_quota": 50, "has_data_service": False} for idx, phone in enumerate([
                 "+201611223320", "+201622334408", "+201687654325", "+201656789028",
                 "+201667809035", "+201645378903", "+201604919109", "+201649191518",
                 "+201649154514", "+201695959930", "+201649177767", "+201649195501",
                 "+201664565811", "+201611111113", "+201645454532", "+201612789009",
                 "+201604912015"
-            ]
+            ])
         }
 
 # Get customer data
@@ -60,49 +62,39 @@ if not phone_numbers:
 
 # Common websites for data usage
 websites = [
-    "http://www.google.com",
-    "http://www.facebook.com",
-    "http://www.youtube.com",
-    "http://www.instagram.com",
-    "http://www.whatsapp.com",
-    "http://www.twitter.com",
-    "http://www.linkedin.com",
-    "http://www.netflix.com",
-    "http://www.amazon.com",
-    "http://www.ebay.com"
+    "http://www.google.com", "http://www.facebook.com", "http://www.youtube.com",
+    "http://www.instagram.com", "http://www.whatsapp.com", "http://www.twitter.com",
+    "http://www.linkedin.com", "http://www.netflix.com", "http://www.amazon.com", "http://www.ebay.com"
 ]
 
 # Create CDRs directory if it doesn't exist
 os.makedirs("./CDRs", exist_ok=True)
 
-# Generate 1000 CDRs for each phone number as dial_a
+# Generate 1000 CDRs for each phone number
 for dial_a in phone_numbers:
     cdrs = []
+    customer_id = customer_data[dial_a]["customer_id"]
     roaming_quota = customer_data[dial_a]["roaming_quota"]
     has_data_service = customer_data[dial_a]["has_data_service"]
     total_cdrs = 1000
-    
+
     # Define service distribution
     if has_data_service:
-        # 40% Data (400), 30% Voice (300), 20% SMS (200), 10% Roaming Voice (100)
         service_counts = {1: 300, 2: 200, 3: 400, 4: 100}  # 1=Voice, 2=SMS, 3=Data, 4=Roaming Voice
     else:
-        # 50% Voice (500), 40% SMS (400), 10% Roaming Voice (100)
         service_counts = {1: 500, 2: 400, 4: 100}
     
-    # Generate exact number of each service type
     service_list = []
     for service, count in service_counts.items():
         service_list.extend([service] * count)
-    random.shuffle(service_list)  # Shuffle to distribute services randomly
+    random.shuffle(service_list)
     
     roaming_calls_generated = 0
     roaming_minutes_used = 0
     
     for service in service_list:
-        is_roaming = (service == 4)  # Roaming Voice
-        
-        # Select dial_b
+        is_roaming = (service == 4)
+
         if is_roaming:
             dial_b = f"+{random.randint(100, 999)}{random.randint(1000000, 9999999)}"
             roaming_calls_generated += 1
@@ -110,8 +102,8 @@ for dial_a in phone_numbers:
             dial_b_candidates = [n for n in phone_numbers if n != dial_a]
             dial_b = choice(dial_b_candidates) if dial_b_candidates else f"+201{randint(1000000, 9999999)}"
         
-        if service in [1, 4]:  # Voice or Roaming Voice
-            duration = randint(10, 180)  # 10-180 seconds
+        if service in [1, 4]:  # Voice or Roaming
+            duration = randint(10, 180)
             if is_roaming:
                 if roaming_minutes_used + duration > roaming_quota:
                     duration = max(0, roaming_quota - roaming_minutes_used)
@@ -124,20 +116,18 @@ for dial_a in phone_numbers:
             external = "0"
         else:  # Data
             dial_b = choice(websites)
-            duration = randint(1, 10) * 1024 * 1024  # 1-10 MB
+            duration = randint(1, 10) * 1024 * 1024
             volume = str(duration)
             external = str(randint(5, 50))
         
-        # Generate time
-        hour = randint(8, 22) if random.random() < 0.8 else randint(0, 23)  # 80% daytime
+        hour = randint(8, 22) if random.random() < 0.8 else randint(0, 23)
         minute = randint(0, 59)
         second = randint(0, 59)
         time_str = f"{hour:02d}:{minute:02d}:{second:02d}"
         
         cdrs.append(f"{dial_a},{dial_b},{service if service != 4 else 1},{volume},{time_str},{external}")
     
-    # Save to file
-    filename = f"./CDRs/CDR_{dial_a.replace('+', '')}.csv"
+    filename = f"./CDRs/{customer_id}_CDR_{dial_a.replace('+', '')}.csv"
     with open(filename, "w") as f:
         f.write("\n".join(cdrs))
 

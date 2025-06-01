@@ -75,8 +75,7 @@
                     data: null,
                     render: function(data) {
                         return '<a href="view.jsp?id=' + data.planId + '" class="btn btn-sm btn-info me-1" title="View details">View</a>' +
-                               '<a href="form.jsp?id=' + data.planId + '" class="btn btn-sm btn-warning me-1" title="Edit rate plan">Edit</a>' +
-                               '<button class="btn btn-sm btn-danger delete-btn" data-id="' + data.planId + '" title="Delete rate plan">Delete</button>';
+                               '<a href="form.jsp?id=' + data.planId + '" class="btn btn-sm btn-warning me-1" title="Edit rate plan">Edit</a>' 
                     }
                 }
             ]

@@ -20,6 +20,8 @@ public class Customer {
     private int occPrice;
     private int monthsNumberInstallments;
     private String[] cugNumbers;
+    private Integer occMonCounter;
+    private float price_occ_per_month;
 
     public Customer() {
     }
@@ -27,7 +29,7 @@ public class Customer {
     public Customer(int customerId, String nid, String name, String phone, int creditLimit,
                     String email, String address, String status, Timestamp registrationDate,
                     int planId, Integer freeUnitId, int promotionPackage, String occName,
-                    int occPrice, int monthsNumberInstallments, String[] cugNumbers) {
+                    int occPrice, int monthsNumberInstallments, String[] cugNumbers, Integer occMonCounter) {
         this.customerId = customerId;
         this.nid = nid;
         this.name = name;
@@ -44,6 +46,7 @@ public class Customer {
         this.occPrice = occPrice;
         this.monthsNumberInstallments = monthsNumberInstallments;
         this.cugNumbers = cugNumbers;
+        this.occMonCounter = occMonCounter;
     }
 
     public Integer getFreeUnitId() {
@@ -87,9 +90,7 @@ public class Customer {
     }
 
     public int getCreditLimit() {
-        return creditLimit
-
-;
+        return creditLimit;
     }
 
     public void setCreditLimit(int creditLimit) {
@@ -176,6 +177,24 @@ public class Customer {
         this.cugNumbers = cugNumbers;
     }
 
+    public Integer getOccMonCounter() {
+        return occMonCounter;
+    }
+
+    public void setOccMonCounter(Integer occMonCounter) {
+        this.occMonCounter = occMonCounter;
+    }
+
+    public float getPrice_occ_per_month() {
+        return price_occ_per_month;
+    }
+
+    public void setPrice_occ_per_month(float price_occ_per_month) {
+        this.price_occ_per_month = price_occ_per_month;
+    }
+    
+    
+
     @Override
     public String toString() {
         return "Customer{" +
@@ -195,6 +214,7 @@ public class Customer {
                 ", occPrice=" + occPrice +
                 ", monthsNumberInstallments=" + monthsNumberInstallments +
                 ", cugNumbers=" + Arrays.toString(cugNumbers) +
+                ", occMonCounter=" + occMonCounter +
                 '}';
     }
 }

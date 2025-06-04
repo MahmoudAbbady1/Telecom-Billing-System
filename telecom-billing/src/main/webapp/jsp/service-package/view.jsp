@@ -97,7 +97,7 @@
 </div>
 
 <script>
-    $(document).ready(function() {
+    $(document).ready(function () {
         const urlParams = new URLSearchParams(window.location.search);
         const packageId = urlParams.get('id');
 
@@ -112,29 +112,30 @@
             headers: {
                 'Authorization': 'Bearer ' + getAuthToken()
             },
-            success: function(data) {
+            success: function (data) {
                 $('#serviceId').text(data.serviceId);
                 $('#serviceName').text(data.serviceName);
                 $('#serviceType').text(data.serviceType);
                 $('#networkZone').text(formatNetworkZone(data.serviceNetworkZone));
                 $('#qouta').text(data.qouta + ' ' + (data.unitDescription || ''));
                 $('#unitDescription').text(data.unitDescription || 'N/A');
-                $('#freeUnit').text(data.isFreeUnite ? 'Yes' : 'No')
-                    .addClass(data.isFreeUnite ? 'free-unit-yes' : 'free-unit-no');
-                $('#monthlyFee').text(data.freeUnitMonthlyFee ? 
-                    'EGP ' + parseFloat(data.freeUnitMonthlyFee).toFixed(2) : 'N/A');
+                $('#freeUnit').text(data.freeUnite ? 'Yes' : 'No')
+                        .addClass(data.freeUnite ? 'free-unit-yes' : 'free-unit-no');
+                $('#monthlyFee').text(data.freeUnitMonthlyFee ?
+                        'EGP ' + parseFloat(data.freeUnitMonthlyFee).toFixed(2) : 'N/A');
                 $('#createdAt').text(new Date(data.createdAt).toLocaleString());
                 $('#editBtn').attr('href', 'form.jsp?id=' + data.serviceId);
             },
-            error: function(xhr) {
+            error: function (xhr) {
                 handleApiError(xhr);
             }
         });
     });
 
     function formatNetworkZone(zone) {
-        if (!zone) return 'N/A';
-        return zone.split('_').map(word => 
+        if (!zone)
+            return 'N/A';
+        return zone.split('_').map(word =>
             word.charAt(0) + word.slice(1).toLowerCase()
         ).join('-');
     }
@@ -150,7 +151,7 @@
         if (xhr.status === 403) {
             message = 'Your session has expired. Please login again.';
             clearAuthTokens();
-            setTimeout(function() {
+            setTimeout(function () {
                 window.location.href = '${pageContext.request.contextPath}/login.jsp';
             }, 2000);
         } else if (xhr.status === 404) {
@@ -177,7 +178,7 @@
         $('#alertContainer').html(alertHtml);
 
         if (type !== 'danger') {
-            setTimeout(function() {
+            setTimeout(function () {
                 $('#' + alertId).alert('close');
             }, 5000);
         }

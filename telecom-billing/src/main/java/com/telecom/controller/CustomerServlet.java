@@ -126,6 +126,9 @@ public class CustomerServlet {
             if (customer.getFreeUnitId() != null && customer.getFreeUnitId() <= 0) {
                 customer.setFreeUnitId(null);
             }
+            if (customer.getOccMonCounter() != null && customer.getOccMonCounter() < 0) {
+                customer.setOccMonCounter(null);
+            }
             if (customerDAO.phoneNumberExists(customer.getPhone())) {
                 return Response.status(Response.Status.CONFLICT)
                         .entity("Phone number already exists")
@@ -177,6 +180,7 @@ public class CustomerServlet {
             customer.setMonthsNumberInstallments(updateData.getMonthsNumberInstallments() >= 0 ? updateData.getMonthsNumberInstallments() : existingCustomer.getMonthsNumberInstallments());
             customer.setCugNumbers(updateData.getCugNumbers() != null ? updateData.getCugNumbers() : existingCustomer.getCugNumbers());
             customer.setPromotionPackage(updateData.getPromotionPackage() >= 0 ? updateData.getPromotionPackage() : existingCustomer.getPromotionPackage());
+            customer.setOccMonCounter(updateData.getOccMonCounter() != null ? updateData.getOccMonCounter() : existingCustomer.getOccMonCounter());
             System.out.println("Constructed customer for update: " + customer.toString());
 
             // Validation
@@ -221,6 +225,11 @@ public class CustomerServlet {
                                 .build();
                     }
                 }
+            }
+            if (customer.getOccMonCounter() != null && customer.getOccMonCounter() < 0) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("OCC monthly counter cannot be negative")
+                        .build();
             }
 
             if (customerDAO.phoneNumberExists(customer.getPhone(), id)) {

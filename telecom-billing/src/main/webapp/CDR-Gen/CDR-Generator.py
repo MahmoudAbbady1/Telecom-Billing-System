@@ -3,6 +3,7 @@ from random import randint, choice
 import requests
 import json
 import os
+import sys
 
 # Fetch customer data from the API
 def get_customer_data():
@@ -21,7 +22,6 @@ def get_customer_data():
             if isinstance(customer, dict) and "phone" in customer and customer.get("status") == "ACTIVE":
                 phone = customer["phone"]
                 customer_id = customer.get("customerId")
-                # Fetch roaming quota and check for data service
                 roaming_quota = 0
                 has_data_service = False
                 rate_plan = item.get("ratePlan", {})
@@ -39,8 +39,8 @@ def get_customer_data():
         
         return customer_info
     except requests.RequestException as e:
-        print(f"Error fetching customer data from API: {e}")
-        print("Using fallback phone numbers with default roaming quota of 50 minutes and no data service.")
+        print(f"Error fetching customer data from API: {e}", file=sys.stderr)
+        print("Using fallback phone numbers with default roaming quota of 50 minutes and no data service.", file=sys.stderr)
         return {
             phone: {"customer_id": idx + 1, "roaming_quota": 50, "has_data_service": False} for idx, phone in enumerate([
                 "+201611223320", "+201622334408", "+201687654325", "+201656789028",
@@ -57,8 +57,8 @@ phone_numbers = list(customer_data.keys())
 
 # Ensure we have at least one phone number
 if not phone_numbers:
-    print("No phone numbers available to generate CDRs.")
-    exit(1)
+    print("No phone numbers available to generate CDRs.", file=sys.stderr)
+    sys.exit(1)
 
 # Common websites for data usage
 websites = [
@@ -69,6 +69,9 @@ websites = [
 
 # Create CDRs directory if it doesn't exist
 os.makedirs("./CDRs", exist_ok=True)
+
+# Store results for output
+results = []
 
 # Generate 1000 CDRs for each phone number
 for dial_a in phone_numbers:
@@ -130,4 +133,9 @@ for dial_a in phone_numbers:
     filename = f"./CDRs/{customer_id}_CDR_{dial_a.replace('+', '')}.csv"
     with open(filename, "w") as f:
         f.write("\n".join(cdrs))
+    
+    # Add file info to results
+    results.append(f"Generated file: {filename}\n" + "\n".join(cdrs))
 
+# Print all results to stdout for the servlet to capture
+print("\n".join(results))

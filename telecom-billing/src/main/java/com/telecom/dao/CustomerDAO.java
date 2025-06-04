@@ -38,7 +38,6 @@ public class CustomerDAO {
                 RatePlan ratePlan = new RatePlan();
                 ratePlan.setPlanId(rs.getInt("plan_id"));
                 ratePlan.setPlanName(rs.getString("plan_name"));
-//                ratePlan.setMonthlyFee(rs.getDouble("monthly_fee"));
                 ratePlan.setCug(rs.getBoolean("is_cug"));
                 ratePlan.setMaxCugMembers(rs.getInt("max_cug_members"));
                 ratePlans.add(ratePlan);
@@ -133,7 +132,7 @@ public class CustomerDAO {
         List<Customer> customers = new ArrayList<>();
         String sql = "SELECT customer_id, nid, name, phone, credit_limit, email, address, "
                 + "status, registration_date, plan_id, free_unit_id, occ_name, occ_price, "
-                + "months_number_installments, cug_numbers, promotion_package "
+                + "months_number_installments, cug_numbers, promotion_package, occ_mon_counter "
                 + "FROM customers ORDER BY customer_id";
 
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
@@ -165,8 +164,8 @@ public class CustomerDAO {
 
         String sql = "INSERT INTO customers (nid, name, phone, credit_limit, email, address, "
                 + "status, registration_date, plan_id, free_unit_id, "
-                + "occ_name, occ_price, months_number_installments, cug_numbers) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "occ_name, occ_price, months_number_installments, cug_numbers, occ_mon_counter) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, customer.getNid());
@@ -191,6 +190,11 @@ public class CustomerDAO {
             } else {
                 stmt.setNull(14, Types.ARRAY);
             }
+            if (customer.getOccMonCounter() != null) {
+                stmt.setInt(15, customer.getOccMonCounter());
+            } else {
+                stmt.setNull(15, Types.INTEGER);
+            }
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -214,7 +218,7 @@ public class CustomerDAO {
         String sql = "UPDATE customers SET nid = ?, name = ?, phone = ?, credit_limit = ?, "
                 + "email = ?, address = ?, status = ?, registration_date = ?, plan_id = ?, "
                 + "free_unit_id = ?, occ_name = ?, occ_price = ?, "
-                + "months_number_installments = ?, cug_numbers = ?, promotion_package = ? "
+                + "months_number_installments = ?, cug_numbers = ?, promotion_package = ?, occ_mon_counter = ? "
                 + "WHERE customer_id = ?";
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, customer.getNid());
@@ -240,7 +244,12 @@ public class CustomerDAO {
                 stmt.setNull(14, Types.ARRAY);
             }
             stmt.setInt(15, customer.getPromotionPackage());
-            stmt.setInt(16, customer.getCustomerId());
+            if (customer.getOccMonCounter() != null) {
+                stmt.setInt(16, customer.getOccMonCounter());
+            } else {
+                stmt.setNull(16, Types.INTEGER);
+            }
+            stmt.setInt(17, customer.getCustomerId());
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -320,32 +329,41 @@ public class CustomerDAO {
         return stats;
     }
 
-    private Customer extractCustomerFromResultSet(ResultSet rs) throws SQLException {
-        Customer customer = new Customer();
-        customer.setCustomerId(rs.getInt("customer_id"));
-        customer.setNid(rs.getString("nid"));
-        customer.setName(rs.getString("name"));
-        customer.setPhone(rs.getString("phone"));
-        customer.setCreditLimit(rs.getInt("credit_limit"));
-        customer.setEmail(rs.getString("email"));
-        customer.setAddress(rs.getString("address"));
-        customer.setStatus(rs.getString("status"));
-        customer.setRegistrationDate(rs.getTimestamp("registration_date"));
-        customer.setPlanId(rs.getInt("plan_id"));
-        int freeUnitId = rs.getInt("free_unit_id");
-        customer.setFreeUnitId(rs.wasNull() ? null : freeUnitId);
-        customer.setOccName(rs.getString("occ_name"));
-        customer.setOccPrice(rs.getInt("occ_price"));
-        customer.setMonthsNumberInstallments(rs.getInt("months_number_installments"));
-        customer.setPromotionPackage(rs.getInt("promotion_package"));
+private Customer extractCustomerFromResultSet(ResultSet rs) throws SQLException {
+    Customer customer = new Customer();
+    customer.setCustomerId(rs.getInt("customer_id"));
+    customer.setNid(rs.getString("nid"));
+    customer.setName(rs.getString("name"));
+    customer.setPhone(rs.getString("phone"));
+    customer.setCreditLimit(rs.getInt("credit_limit"));
+    customer.setEmail(rs.getString("email"));
+    customer.setAddress(rs.getString("address"));
+    customer.setStatus(rs.getString("status"));
+    customer.setRegistrationDate(rs.getTimestamp("registration_date"));
+    customer.setPlanId(rs.getInt("plan_id"));
+    int freeUnitId = rs.getInt("free_unit_id");
+    customer.setFreeUnitId(rs.wasNull() ? null : freeUnitId);
+    customer.setOccName(rs.getString("occ_name"));
+    customer.setOccPrice(rs.getInt("occ_price"));
+    customer.setMonthsNumberInstallments(rs.getInt("months_number_installments"));
+    customer.setPromotionPackage(rs.getInt("promotion_package"));
+    int occMonCounter = rs.getInt("occ_mon_counter");
+    customer.setOccMonCounter(rs.wasNull() ? null : occMonCounter);
 
-        Array cugArray = rs.getArray("cug_numbers");
-        if (cugArray != null) {
-            customer.setCugNumbers((String[]) cugArray.getArray());
-        } else {
-            customer.setCugNumbers(new String[0]);
-        }
-
-        return customer;
+    Array cugArray = rs.getArray("cug_numbers");
+    if (cugArray != null) {
+        customer.setCugNumbers((String[]) cugArray.getArray());
+    } else {
+        customer.setCugNumbers(new String[0]);
     }
+
+    // Calculate price_occ_per_month if needed
+    if (customer.getOccPrice() > 0 && customer.getMonthsNumberInstallments() > 0) {
+        customer.setPrice_occ_per_month((float) customer.getOccPrice() / customer.getMonthsNumberInstallments());
+    } else {
+        customer.setPrice_occ_per_month(0.0f);
+    }
+
+    return customer;
+}
 }

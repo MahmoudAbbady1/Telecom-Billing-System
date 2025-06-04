@@ -371,35 +371,40 @@
 
 
 
+function updateRatePlan(ratePlanData) {
+    $('#saveBtn').prop('disabled', true)
+        .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...');
 
-        function updateRatePlan(ratePlanData) {
-            $('#saveBtn').prop('disabled', true)
-                    .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...');
-
-            ratePlanData.planId = parseInt(planId);
-
-            $.ajax({
-                url: '${pageContext.request.contextPath}/api/rate-plans/' + planId,
-                method: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify(ratePlanData),
-                headers: {
-                    'Authorization': 'Bearer ' + getAuthToken()
-                },
-                success: function (data) {
-                    showAlert('success', 'Rate plan updated successfully!');
-                    setTimeout(() => {
-                        window.location.href = 'view.jsp?id=' + data.planId;
-                    }, 1500);
-                },
-                error: function (xhr) {
-                    $('#saveBtn').prop('disabled', false)
-                            .html('<i class="fas fa-save"></i> Save Rate Plan');
-                    handleApiError(xhr);
-                }
-            });
+    const planId = parseInt($('#planId').val()); // Get planId from form, not payload
+    $.ajax({
+        url: '${pageContext.request.contextPath}/api/rate-plans/' + planId,
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            planName: ratePlanData.planName,
+            description: ratePlanData.description,
+            monthlyFee: parseFloat(ratePlanData.monthlyFee), // Ensure number, not string
+            isCug: ratePlanData.isCug,
+            maxCugMembers: ratePlanData.maxCugMembers,
+            cugUnit: ratePlanData.cugUnit,
+            serviceIds: ratePlanData.serviceIds
+        }),
+        headers: {
+            'Authorization': 'Bearer ' + getAuthToken()
+        },
+        success: function (data) {
+            showAlert('success', 'Rate plan updated successfully!');
+            setTimeout(() => {
+                window.location.href = 'view.jsp?id=' + data.planId;
+            }, 1500);
+        },
+        error: function (xhr) {
+            $('#saveBtn').prop('disabled', false)
+                .html('<i class="fas fa-save"></i> Save Rate Plan');
+            handleApiError(xhr);
         }
-
+    });
+}
         function validateForm() {
             const form = document.getElementById('ratePlanForm');
             if (!form.checkValidity()) {

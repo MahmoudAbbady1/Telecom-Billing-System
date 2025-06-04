@@ -5,7 +5,7 @@
         <h3>Invoices</h3>
     </div>
     <div class="col-md-6 text-right" style="text-align: right">
-        <a href="invoices?action=generate" class="btn btn-success">Generate All Invoices</a>
+        <a href="/telecom-billing/invoices/downloadAll" class="btn btn-success">Download All Invoices</a>
     </div>
 </div>
 
@@ -17,6 +17,7 @@
                     <th>Invoice ID</th>
                     <th>Customer</th>
                     <th>Date</th>
+                    <th>Total</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -25,154 +26,50 @@
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap4.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
+
 <script>
 $(document).ready(function() {
-    // Initialize or reinitialize the table safely
-    initInvoicesTable();
-    
-    function initInvoicesTable() {
-        // Destroy existing instance if it exists
-        if ($.fn.dataTable.isDataTable('#invoicesTable')) {
-            $('#invoicesTable').DataTable().destroy();
-        }
-        
-        // Initialize new DataTable instance
-        $('#invoicesTable').DataTable({
-            responsive: true,
-            ajax: {
-                url: 'http://localhost:8080/telecom-billing/api/customers',
-                dataSrc: function(json) {
-                    let invoices = [];
-                    json.forEach(function(customerData) {
-                        const customer = customerData.customer || {};
-                        const phoneClean = customer.phone ? customer.phone.replace(/\D/g, '') : '';
-                        const invoiceId = customer.customerId + phoneClean;
-                        const invoice = {
-                            invoiceId: invoiceId,
-                            invoiceDate: new Date().toISOString(),
-                            customer: customer
-                        };
-                        invoice._fullData = {
-                            customer: customer,
-                            ratePlan: customerData.ratePlan || {},
-                            freeUnit: customerData.freeUnit || {}
-                        };
-                        invoices.push(invoice);
+    if ($.fn.DataTable.isDataTable('#invoicesTable')) {
+        $('#invoicesTable').DataTable().destroy();
+    }
+    $('#invoicesTable').DataTable({
+        ajax: {
+            url: 'http://localhost:8080/telecom-billing/api/invoices',
+            dataSrc: ''
+        },
+        columns: [
+            { data: 'invoiceId' },
+            { data: 'customer.name' },
+            { 
+                data: 'invoiceDate',
+                render: function(data) {
+                    return new Date(data).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
                     });
-                    return invoices;
-                },
-                headers: {
-                    'Authorization': 'Bearer ' + getAuthToken()
-                },
-                error: function(xhr) {
-                    handleAjaxError(xhr, 'loading invoices');
                 }
             },
-            columns: [
-                { data: 'invoiceId' },
-                {
-                    data: null,
-                    render: function(data) {
-                        return data.customer ? data.customer.name : 'N/A';
-                    }
-                },
-                {
-                    data: 'invoiceDate',
-                    render: function(date) {
-                        return date ? new Date(date).toLocaleDateString() : 'N/A';
-                    }
-                },
-                {
-                    data: null,
-                    render: function(data) {
-                        return '<a href="view.jsp?id=' + data.customer.customerId + '" class="btn btn-sm btn-info me-1">View</a>' +
-                               '<button onclick="downloadInvoice(\'' + data.invoiceId + '\')" class="btn btn-sm btn-primary">Download PDF</button>';
-                    }
+            { 
+                data: 'total',
+                render: function(data) {
+                    return parseFloat(data).toFixed(2) + ' EGP';
                 }
-            ],
-            language: {
-                search: "Search:",
-                lengthMenu: "Show _MENU_ entries",
-                info: "Showing _START_ to _END_ of _TOTAL_ entries",
-                paginate: {
-                    previous: "Previous",
-                    next: "Next"
+            },
+            { 
+                data: null,
+                render: function(data, type, row) {
+                    return '<a href="view.jsp?id=' + row.invoiceId + '" class="btn btn-primary btn-sm">View</a> ' +
+                           '<a href="/telecom-billing/invoices/download?id=' + row.invoiceId + '" class="btn btn-secondary btn-sm">Download</a>';
                 }
             }
-        });
-    }
-
-
-function downloadInvoice(invoiceId) {
-    window.location.href = "${pageContext.request.contextPath}/downloadInvoice?id=" + invoiceId;
-}
-
-
-    function handleAjaxError(xhr, context) {
-        console.error('API Error:', xhr);
-        var message = 'An error occurred while ' + context;
-        if (xhr.status === 403) {
-            message = 'Your session has expired. Please login again.';
-            clearAuthTokens();
-            setTimeout(function() {
-                window.location.href = '${pageContext.request.contextPath}/login.jsp';
-            }, 2000);
-        } else if (xhr.status === 404) {
-            message = 'Requested resource not found.';
-        } else if (xhr.status === 500) {
-            message = 'Server error: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.statusText);
-        }
-        showAlert(message, 'danger');
-    }
-
-    window.downloadInvoice = function(invoiceId) {
-        $.ajax({
-            url: '${pageContext.request.contextPath}/api/invoices/' + invoiceId + '/download',
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + getAuthToken()
-            },
-            xhrFields: {
-                responseType: 'blob'
-            },
-            success: function(data) {
-                const url = window.URL.createObjectURL(data);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'invoice_' + invoiceId + '.pdf';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            },
-            error: function(xhr) {
-                handleAjaxError(xhr, 'downloading invoice');
-            }
-        });
-    };
-
-    function showAlert(message, type) {
-        const alertHtml = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>`;
-        $('.card-body').prepend(alertHtml);
-        setTimeout(function() {
-            $('.alert').alert('close');
-        }, 5000);
-    }
+        ],
+        "bDestroy": true
+    });
 });
-
-function getAuthToken() {
-    return localStorage.getItem('authToken') || '';
-}
-
-function clearAuthTokens() {
-    localStorage.removeItem('authToken');
-    document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-}
 </script>
-
 <%@ include file="../includes/footer.jsp" %>

@@ -1,13 +1,11 @@
 <%@ include file="../includes/header.jsp" %>
-<%--<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>--%>
 
 <div class="row mb-3">
     <div class="col-md-6">
-        <h3>Invoice #${invoice.invoiceId}</h3>
+        <h3>Invoice #<span id="invoiceId">Loading...</span></h3>
     </div>
     <div class="col-md-6 text-right" style="text-align: right">
-        <button onclick="downloadInvoice(${invoice.invoiceId})" 
-                class="btn btn-primary">Download PDF</button>
+        <button onclick="downloadInvoice()" class="btn btn-primary">Download PDF</button>
         <a href="list.jsp" class="btn btn-secondary">Back to List</a>
     </div>
 </div>
@@ -18,225 +16,160 @@
             <div class="col-md-6">
                 <h5>Bill To:</h5>
                 <dl>
+                    <dt>Name:</dt>
                     <dd id="name">Loading...</dd>
                     <dt>Phone:</dt>
-                    <dd id="phone">Loading...</dd>
+                    <dd id="phone">N/A</dd>
                     <dt>Email:</dt>
-                    <dd id="email">Loading...</dd>
+                    <dd id="email">N/A</dd>
                 </dl>
             </div>
-            <div class="col-md-6 text-right" >
-                <br>
-                <dt>Address:   <span id="address" style="font-weight: normal;"></span></dt>
-                <p><strong>Invoice Date:</strong> <span id="invoice-date"></span></p>
-                <p><strong>Status:</strong> </p>
+            <div class="col-md-6 text-right">
+                <dt>Address:</dt>
+                <dd id="address" style="font-weight: normal;">N/A</dd>
+                <p><strong>Invoice Date:</strong> <span id="invoiceDate">Loading...</span></p>
+                <p><strong>Status:</strong> <span id="status">N/A</span></p>
             </div>
         </div>
     </div>
 </div>
+
 <div class="card">
     <div class="card-body">
         <table class="table">
             <thead>
                 <tr>
                     <th>Description</th>
-                    <th class="text-right">Description</th>
-                    <th class="text-center">Fees</th>
+                    <th>Details</th>
+                    <th class="text-center">Fees (EGP)</th>
                 </tr>
             </thead>
             <tfoot>
                 <tr>
-                    <th class="text-right">Rate plane:</th>
-                    <th><span id="planName" style="font-weight: normal;"></span></th>
-                    <th class="text-center"><span id="monthlyFee" style="font-weight: normal;"></span> <span>EGP</span></th>
+                    <th class="text-right">Rate Plan:</th>
+                    <th><span id="planName" style="font-weight: normal;">N/A</span></th>
+                    <th class="text-center"><span id="monthlyFee" style="font-weight: normal;">0.00</span></th>
                 </tr>
                 <tr>
-                    <th class="text-right">Free Unite package:</th>
-                    <th><span id="freeUnitName" style="font-weight: normal;"></span></th>
-                    <th class="text-center"><span id="freeUnitMonthlyFee" style="font-weight: normal;"></span> <span>EGP</span></th>
+                    <th class="text-right">Free Unit Package:</th>
+                    <th><span id="freeUnitName" style="font-weight: normal;">N/A</span></th>
+                    <th class="text-center"><span id="freeUnitMonthlyFee" style="font-weight: normal;">0.00</span></th>
                 </tr>
                 <tr>
                     <th class="text-right">OCC:</th>
-                    <th><span id="occName" style="font-weight: normal;"></span></th>
-                    <th class="text-center"><span id="occPrice" style="font-weight: normal;"></span> <span>EGP</span></th>
+                    <th><span id="occName" style="font-weight: normal;">N/A</span></th>
+                    <th class="text-center"><span id="price_occ_per_month" style="font-weight: normal;">0.00</span></th>
                 </tr>
                 <tr>
-                    <th colspan="2" class="text-right">ROR Usage</th>
-                    <th class="text-center"><span id="rorusage" style="font-weight: normal;"></span> <span>EGP</span></th>
+                    <th class="text-right">ROR Usage:</th>
+                    <th><span id="rorUsage" style="font-weight: normal;">0.00</span></th>
+                    <th class="text-center"><span id="rorUsageFee" style="font-weight: normal;">0.00</span></th>
                 </tr>
                 <tr>
                     <th colspan="2" class="text-right">Subtotal:</th>
-                    <th class="text-center"><span id="Subtotal" style="font-weight: normal;"></span> <span>EGP</span></th>
+                    <th class="text-center"><span id="subtotalFee" style="font-weight: normal;">0.00</span></th>
                 </tr>
                 <tr>
                     <th colspan="2" class="text-right">Tax (10%):</th>
-                    <th class="text-center"><span id="Tax" style="font-weight: normal;"></span> <span>EGP</span></th>
+                    <th class="text-center"><span id="taxFee" style="font-weight: normal;">0.00</span></th>
                 </tr>
                 <tr>
-                    <th colspan="2" class="text-right">Promotion package:</th>
-                    <th class="text-center"><span id="promotionPackage" style="font-weight: normal;"></span> <span>EGP</span></th>
+                    <th colspan="2" class="text-right">Promotion Package:</th>
+                    <th class="text-center"><span id="promotionPackageFee" style="font-weight: normal;">0.00</span></th>
                 </tr>
                 <tr>
                     <th colspan="2" class="text-right">Total:</th>
-                    <th class="text-center"><span id="total" style="font-weight: normal;"></span> <span>EGP</span></th>
+                    <th class="text-center"><span id="totalFee" style="font-weight: bold;">0.00</span></th>
                 </tr>
             </tfoot>
         </table>
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    const today = new Date();
-    const formattedDate = today.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-        hour12: true
-    });
+            function getQueryParam(param) {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get(param);
+            }
 
-    $(document).ready(function () {
-        const urlParams = new URLSearchParams(window.location.search);
-        const customerId = urlParams.get('id');
-        let maxCugMembers = 0;
-        let tempPromotionPackage = null;
-        if (!customerId) {
-            showAlert('danger', 'No customer ID specified in the URL');
-            return;
-        }
-
-        $.ajax({
-            url: '${pageContext.request.contextPath}/api/customers/' + customerId,
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + getAuthToken()
-            },
-            success: function (response) {
-                const customerData = response.customer;
-                const planData = response.ratePlan;
-                const freeUnit = response.freeUnit;
-
-                const occPrice = parseFloat(customerData.occPrice) || 0;
-                const installments = parseFloat(customerData.monthsNumberInstallments) || 1;
-                const monthlyFee = parseFloat(planData?.monthlyFee) || 0;
-                const freeUnitFee = parseFloat(freeUnit?.freeUnitMonthlyFee) || 0;
-                const promoDiscount = parseFloat(customerData.promotionPackage) || 0;
-                const creditLimit = parseFloat(customerData.creditLimit);
-
-                // Check for stored random value and timestamp
-                let random;
-                const storedRandom = sessionStorage.getItem('randomValue_' + customerId);
-                const storedTimestamp = sessionStorage.getItem('randomTimestamp_' + customerId);
-                const currentTime = new Date().getTime();
-                const thirtyMinutes = 30 * 60 * 1000;
-
-                if (storedRandom && storedTimestamp && (currentTime - parseInt(storedTimestamp) < thirtyMinutes)) {
-                    random = parseFloat(storedRandom);
+            function downloadInvoice() {
+                const invoiceId = getQueryParam('id');
+                if (invoiceId) {
+                    console.log('Downloading PDF for invoice: ' + invoiceId);
+                    window.location.href = '/telecom-billing/invoices/download?id=' + invoiceId;
                 } else {
-                    random = Math.random() * customerData.creditLimit;
-                    sessionStorage.setItem('randomValue_' + customerId, random);
-                    sessionStorage.setItem('randomTimestamp_' + customerId, currentTime);
+                    alert('No invoice ID provided for PDF download.');
                 }
+            }
 
-                const occInstallment = occPrice / installments;
-                const usageCost = random <= creditLimit ? (creditLimit - random) : 0;
-                const subtotal = occInstallment + monthlyFee + freeUnitFee + usageCost;
-                const tax = subtotal * 0.1;
-                const total = subtotal + tax - promoDiscount;
+            $(document).ready(function () {
+                const invoiceId = getQueryParam('id');
+                if (invoiceId) {
+                    console.log('Fetching invoice data for ID: ' + invoiceId);
+                    $.ajax({
+                        url: 'http://localhost:8080/telecom-billing/api/invoices/' + invoiceId,
+                        method: 'GET',
+                        dataType: 'json',
+                        success: function (data) {
+                            console.log('API response:', data);
+                            console.log('Promotion Package:', data.customer?.promotionPackage); // Debug line
 
-                // Set UI fields
-                $('#customerId').text(customerData.customerId);
-                $('#name').text(customerData.name);
-                $('#nid').text(customerData.nid || 'N/A');
-                $('#status').text(customerData.status)
-                    .addClass(getStatusClass(customerData.status));
-                $('#phone').text(customerData.phone);
-                $('#email').text(customerData.email || 'N/A');
-                $('#address').text(customerData.address || 'N/A');
-                $('#rorusage').text(random <= customerData.creditLimit ? (customerData.creditLimit - random).toFixed(2) : customerData.creditLimit);
-                $('#registrationDate').text(formatDate(customerData.registrationDate));
-                $('#planName').text(planData ? (planData.planName + '[ ' + planData.servicePackages.map(sp => sp.serviceType + '-' + sp.qouta).join(', ') + ']') : 'N/A');
-                $('#freeUnitName').text(freeUnit ? (freeUnit.serviceName + ' - ' + freeUnit.serviceType + '-' + freeUnit.qouta) : 'Not Have');
-                $('#monthlyFee').text(planData ? (planData.monthlyFee + ' ') : 'N/A');
-                $('#occName').text(customerData.occName || 'Not Have');
-                tempPromotionPackage = sessionStorage.getItem('tempPromotionPackage_' + customerId) || customerData.promotionPackage;
-                $('#promotionPackage').text(tempPromotionPackage !== null ? tempPromotionPackage : 'N/A');
-                $('#freeUnitMonthlyFee').text(freeUnitFee.toFixed(2));
-                $('#occPrice').text(occInstallment.toFixed(2));
-                $('#monthsNumberInstallments').text(installments);
-                $('#invoice-date').text(formattedDate);
-                $('#Subtotal').text( subtotal.toFixed(2));
-                $('#Tax').text(tax.toFixed(2));
-                $('#total').text( + total.toFixed(2));
-            },
-            error: handleApiError
-        });
-    });
+                            // Populate invoice details
+                            $('#invoiceId').text(data.invoice?.invoiceId || 'N/A');
+                            $('#name').text(data.customer?.name || 'N/A');
+                            $('#phone').text(data.customer?.phone || 'N/A');
+                            $('#email').text(data.customer?.email || 'N/A');
+                            $('#address').text(data.customer?.address || 'N/A');
+                            $('#invoiceDate').text(data.invoice?.invoiceDate ?
+                                    new Date(data.invoice.invoiceDate).toLocaleDateString('en-US', {
+                                year: 'numeric', month: 'short', day: 'numeric'
+                            }) : 'N/A');
+                            $('#status').text(data.customer?.status || 'N/A');
 
-    function getStatusClass(status) {
-        if (!status)
-            return '';
-        switch (status.toUpperCase()) {
-            case 'Paid':
-                return 'status-active';
-            case 'INACTIVE':
-                return 'status-inactive';
-            case 'SUSPENDED':
-                return 'status-suspended';
-            default:
-                return '';
-        }
-    }
+                            // Populate table
+                            $('#planName').text(data.ratePlan?.planName || 'N/A');
+                            $('#monthlyFee').text(data.ratePlan?.monthlyFee ?
+                                    parseFloat(data.ratePlan.monthlyFee).toFixed(2) : '0.00');
+                            $('#freeUnitName').text(data.freeUnit?.serviceName || 'Not Have');
+                            $('#freeUnitMonthlyFee').text(data.freeUnit?.freeUnitMonthlyFee ?
+                                    parseFloat(data.freeUnit.freeUnitMonthlyFee).toFixed(2) : '0.00');
+                            $('#occName').text(data.customer?.occName || 'Not Have ');
+                            $('#price_occ_per_month').text(data.customer?.price_occ_per_month ?
+                                    parseFloat(data.customer.price_occ_per_month).toFixed(2) : '0.00');
+                            $('#rorUsage').text(data.invoice?.rorUsage ?
+                                    parseFloat(data.invoice.rorUsage).toFixed(2) : '0.00');
+                            $('#rorUsageFee').text(data.invoice?.rorUsage ?
+                                    parseFloat(data.invoice.rorUsage).toFixed(2) : '0.00');
+                            $('#subtotal').text(data.invoice?.subtotal ?
+                                    parseFloat(data.invoice.subtotal).toFixed(2) : '0.00');
+                            $('#subtotalFee').text(data.invoice?.subtotal ?
+                                    parseFloat(data.invoice.subtotal).toFixed(2) : '0.00');
+                            $('#tax').text(data.invoice?.tax ?
+                                    parseFloat(data.invoice.tax).toFixed(2) : '0.00');
+                            $('#taxFee').text(data.invoice?.tax ?
+                                    parseFloat((data.invoice.tax / 100) * data.invoice.subtotal).toFixed(2) : '0.00');
 
-    function formatDate(timestamp) {
-        if (!timestamp)
-            return 'N/A';
-        const date = new Date(timestamp);
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-    }
-
-    function getAuthToken() {
-        return localStorage.getItem('authToken') || '';
-    }
-
-    function handleApiError(xhr) {
-        console.error('API Error:', xhr);
-        let message = 'An error occurred while loading customer details';
-        if (xhr.status === 403) {
-            message = 'Your session has expired. Please login again.';
-            clearAuthTokens();
-            setTimeout(() => {
-                window.location.href = '${pageContext.request.contextPath}/login.jsp';
-            }, 2000);
-        } else if (xhr.status === 404) {
-            message = 'Customer not found';
-        } else if (xhr.status === 500) {
-            message = 'Server error: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.statusText);
-        }
-        showAlert('danger', message);
-    }
-
-    function clearAuthTokens() {
-        localStorage.removeItem('authToken');
-        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    }
-
-    function showAlert(type, message) {
-        const alertId = 'alert-' + Date.now();
-        const alertHtml = `
-            <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>`;
-        $('#alertContainer').html(alertHtml);
-        if (type !== 'danger') {
-            setTimeout(() => {
-                $('#' + alertId).alert('close');
-            }, 5000);
-        }
-    }
+                            // Ensure promotion package is formatted as a number
+                            $('#promotionPackage').text(data.customer?.promotionPackage ?
+                                    parseFloat(data.customer.promotionPackage).toFixed(2) : '0.00');
+                            $('#promotionPackageFee').text(data.customer?.promotionPackage ?
+                                    parseFloat(data.customer.promotionPackage).toFixed(2) : '0.00');
+                            $('#total').text(data.invoice?.total ?
+                                    parseFloat(data.invoice.total).toFixed(2) : '0.00');
+                            $('#totalFee').text(data.invoice?.total ?
+                                    parseFloat(data.invoice.total).toFixed(2) : '0.00');
+                        },
+                        error: function (xhr, status, error) {
+                            console.error('AJAX error:', status, error, xhr.responseText);
+                            alert('Failed to load invoice details: ' + error);
+                        }
+                    });
+                } else {
+                    console.error('No invoice ID provided in URL');
+                    alert('No invoice ID provided in the URL.');
+                }
+            });
 </script>
 
 <%@ include file="../includes/footer.jsp" %>

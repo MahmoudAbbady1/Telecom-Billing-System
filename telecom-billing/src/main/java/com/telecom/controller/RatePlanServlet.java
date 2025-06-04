@@ -40,6 +40,21 @@ public class RatePlanServlet {
     }
 
     @GET
+    @Path("/counts")
+    public Response getRatePlanCounts() {
+        try {
+            Map<String, Integer> counts = new HashMap<>();
+            counts.put("totalCount", ratePlanDAO.getTotalRatePlansCount());
+            counts.put("cugCount", ratePlanDAO.getCugRatePlansCount());
+            counts.put("nonCugCount", ratePlanDAO.getNonCugRatePlansCount());
+            return Response.ok(counts).build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error retrieving rate plan counts", e);
+            return errorResponse("Error retrieving rate plan counts", e);
+        }
+    }
+
+    @GET
     @Path("/{id}")
     public Response getRatePlanById(@PathParam("id") int id) {
         try {
@@ -59,11 +74,9 @@ public class RatePlanServlet {
     @POST
     public Response createRatePlan(RatePlanRequest request) {
         try {
-            // Validate request
             Response validationResponse = validateRatePlanRequest(request);
             if (validationResponse != null) return validationResponse;
 
-            // Create rate plan
             RatePlan ratePlan = new RatePlan();
             ratePlan.setPlanName(request.getPlanName());
             ratePlan.setDescription(request.getDescription());
@@ -72,15 +85,12 @@ public class RatePlanServlet {
             ratePlan.setMaxCugMembers(request.isCug() ? request.getMaxCugMembers() : 0);
             ratePlan.setCugUnit(request.isCug() ? request.getCugUnit() : 0);
 
-            // Add to database
             int planId = ratePlanDAO.addRatePlan(ratePlan);
             
-            // Add services if provided
             if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
                 addServicesToRatePlan(planId, request.getServiceIds());
             }
 
-            // Return created rate plan with services
             RatePlan createdPlan = ratePlanDAO.getRatePlanWithServices(planId);
             return Response.status(Response.Status.CREATED).entity(createdPlan).build();
             
@@ -94,7 +104,6 @@ public class RatePlanServlet {
     @Path("/{id}")
     public Response updateRatePlan(@PathParam("id") int id, RatePlanRequest request) {
         try {
-            // Validate existing rate plan
             RatePlan existing = ratePlanDAO.getRatePlanById(id);
             if (existing == null) {
                 return Response.status(Response.Status.NOT_FOUND)
@@ -102,11 +111,9 @@ public class RatePlanServlet {
                         .build();
             }
 
-            // Validate request
             Response validationResponse = validateRatePlanRequest(request);
             if (validationResponse != null) return validationResponse;
 
-            // Update rate plan
             RatePlan ratePlan = new RatePlan();
             ratePlan.setPlanId(id);
             ratePlan.setPlanName(request.getPlanName());
@@ -118,13 +125,11 @@ public class RatePlanServlet {
 
             ratePlanDAO.updateRatePlan(ratePlan);
 
-            // Update services - first remove all existing, then add new ones
             ratePlanDAO.removeAllServicesFromRatePlan(id);
             if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
                 addServicesToRatePlan(id, request.getServiceIds());
             }
 
-            // Return updated rate plan with services
             RatePlan updatedPlan = ratePlanDAO.getRatePlanWithServices(id);
             return Response.ok(updatedPlan).build();
             
@@ -170,7 +175,6 @@ public class RatePlanServlet {
         }
     }
 
-    // Helper methods
     private Response validateRatePlanRequest(RatePlanRequest request) {
         if (request.getPlanName() == null || request.getPlanName().trim().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -229,13 +233,12 @@ public class RatePlanServlet {
         private String description;
         private BigDecimal monthlyFee;
         
-        @JsonProperty("isCug") // Add this annotation
+        @JsonProperty("isCug")
         private boolean cug;
         private int maxCugMembers;
         private int cugUnit;
         private List<Integer> serviceIds;
 
-        // Getters and setters
         public String getPlanName() { return planName; }
         public void setPlanName(String planName) { this.planName = planName; }
         public String getDescription() { return description; }

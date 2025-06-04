@@ -143,16 +143,18 @@ $.ajax({
     }
 });
 
-        
-  function initializeCustomersTable() {
+function initializeCustomersTable() {
+    if ($.fn.DataTable.isDataTable('#customersTable')) {
+        $('#customersTable').DataTable().clear().destroy();
+    }
+
     table = $('#customersTable').DataTable({
         responsive: true,
         ajax: {
             url: 'http://localhost:8080/telecom-billing/api/customers',
             dataSrc: function(json) {
-                // Store the full API response to access nested objects like ratePlan in render functions
                 return json.map(function(item) {
-                    item.customer._fullData = item; // attach full object for later access
+                    item.customer._fullData = item;
                     return item.customer;
                 });
             },
@@ -164,10 +166,10 @@ $.ajax({
             }
         },
         columns: [
-            {data: 'customerId'},
-            {data: 'name'},
-            {data: 'phone'},
-            {data: 'email'},
+            { data: 'customerId' },
+            { data: 'name' },
+            { data: 'phone' },
+            { data: 'email' },
             {
                 data: 'status',
                 render: function(status) {
@@ -175,7 +177,6 @@ $.ajax({
                     if (status === 'ACTIVE') badgeClass = 'bg-success';
                     else if (status === 'SUSPENDED') badgeClass = 'bg-warning';
                     else if (status === 'INACTIVE') badgeClass = 'bg-danger';
-
                     return '<span class="badge ' + badgeClass + '">' + status + '</span>';
                 }
             },

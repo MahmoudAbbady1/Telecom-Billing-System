@@ -15,6 +15,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.logging.Logger;
 
 public class InvoiceDAO {
@@ -24,6 +25,7 @@ public class InvoiceDAO {
     private final CustomerDAO customerDAO = new CustomerDAO();
     private final RatePlanDAO ratePlanDAO = new RatePlanDAO();
     private final ServicePackageDAO servicePackageDAO = new ServicePackageDAO();
+    private final Random random = new Random();
 
     public void createInvoice(CustomerDetailsDTO customerDetails, String csvContent) throws SQLException {
         Customer customer = customerDetails.getCustomer();
@@ -33,8 +35,8 @@ public class InvoiceDAO {
         String invoiceId = "INV-" + System.currentTimeMillis();
         System.out.println("Generated Invoice ID: " + invoiceId);
 
-        // Calculate rorUsage from CSV content
-        BigDecimal rorUsage = calculateRorUsageFromCsv(csvContent, customer.getCreditLimit());
+        // Calculate rorUsage using random number
+        BigDecimal rorUsage = calculateRorUsage(customer.getCreditLimit());
         System.out.println("Remaining (ROR) Usage for customer ID " + customer.getCustomerId() + ": " + rorUsage);
 
         BigDecimal monthlyFee = ratePlan.getMonthlyFee();
@@ -76,7 +78,6 @@ public class InvoiceDAO {
                 + "VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = dbConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setString(1, invoice.getInvoiceId());
             stmt.setInt(2, invoice.getCustomerId());
             stmt.setBigDecimal(3, invoice.getRorUsage());
@@ -94,35 +95,15 @@ public class InvoiceDAO {
         }
     }
 
-    private BigDecimal calculateRorUsageFromCsv(String csvContent, int creditLimit) {
+    private BigDecimal calculateRorUsage(int creditLimit) {
         try {
-            // Split CSV content into lines, skipping the header
-            String[] lines = csvContent.split("\n");
-            BigDecimal totalVolume = BigDecimal.ZERO;
-
-            // Sum the 'volume' column (assuming it's the 4th column based on JSP headers)
-            for (int i = 1; i < lines.length; i++) {
-                if (lines[i].trim().isEmpty()) {
-                    continue;
-                }
-                String[] columns = lines[i].split(",");
-                if (columns.length >= 4) {
-                    try {
-                        String volumeStr = columns[3].trim(); // 'volume' is the 4th column
-                        BigDecimal volume = new BigDecimal(volumeStr);
-                        totalVolume = totalVolume.add(volume);
-                    } catch (NumberFormatException e) {
-                        LOGGER.warning("Invalid volume format in CSV line " + i + ": " + lines[i]);
-                    }
-                }
-            }
-
-            // Calculate remaining usage: creditLimit - totalVolume
-            BigDecimal usage = new BigDecimal(creditLimit).subtract(totalVolume).max(BigDecimal.ZERO);
+            // Generate a random number less than creditLimit
+            double randomNum = random.nextDouble() * creditLimit; // Random number between 0 and creditLimit
+            BigDecimal randomBigDecimal = new BigDecimal(randomNum).setScale(2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal usage = new BigDecimal(creditLimit).subtract(randomBigDecimal).max(BigDecimal.ZERO);
             return usage.setScale(2, BigDecimal.ROUND_HALF_UP);
         } catch (Exception e) {
-            LOGGER.severe("Error parsing CSV content: " + e.getMessage());
-            // Fallback to zero usage if CSV parsing fails
+            LOGGER.severe("Error calculating ROR usage: " + e.getMessage());
             return BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP);
         }
     }
@@ -139,15 +120,12 @@ public class InvoiceDAO {
         }
     }
 
-
-
     public List<Invoice> getAllInvoicesWithCustomerName() throws SQLException {
         List<Invoice> invoices = new ArrayList<>();
         String sql = "SELECT inv.*, cu.customer_id, cu.name FROM invoices inv "
                 + "JOIN customers cu ON cu.customer_id = inv.customer_id";
 
         try (Connection conn = dbConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
-
             while (rs.next()) {
                 Invoice invoice = new Invoice();
                 invoice.setInvoiceId(rs.getString("invoice_id"));
@@ -159,12 +137,10 @@ public class InvoiceDAO {
                 invoice.setTotal(rs.getBigDecimal("total"));
                 invoice.setCreatedAt(rs.getTimestamp("created_at"));
 
-                // Create and populate minimal Customer object
                 Customer customer = new Customer();
                 customer.setCustomerId(rs.getInt("customer_id"));
                 customer.setName(rs.getString("name"));
-                          
-                invoice.setCustomer(customer); // Set customer object
+                invoice.setCustomer(customer);
 
                 invoices.add(invoice);
             }
@@ -176,17 +152,15 @@ public class InvoiceDAO {
             throw e;
         }
     }
-    
+
     public List<InvoiceDetailsDTO> getAllInvoicesWithDetails() throws SQLException {
         List<InvoiceDetailsDTO> invoiceDetailsList = new ArrayList<>();
         String sql = "SELECT invoice_id, customer_id, invoice_date, ror_usage, subtotal, tax, total, created_at FROM invoices";
 
-        try (Connection conn = dbConnection.getConnection(); 
-             PreparedStatement stmt = conn.prepareStatement(sql); 
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
-
             while (rs.next()) {
-                // Create Invoice object
                 Invoice invoice = new Invoice();
                 invoice.setInvoiceId(rs.getString("invoice_id"));
                 invoice.setCustomerId(rs.getInt("customer_id"));
@@ -197,20 +171,15 @@ public class InvoiceDAO {
                 invoice.setTotal(rs.getBigDecimal("total"));
                 invoice.setCreatedAt(rs.getTimestamp("created_at"));
 
-                // Fetch full customer details
                 Customer customer = customerDAO.getCustomerById(invoice.getCustomerId());
                 if (customer == null) {
                     LOGGER.warning("Customer not found for ID: " + invoice.getCustomerId());
-                    continue; // Skip if customer not found
+                    continue;
                 }
 
-                // Fetch rate plan with services
                 RatePlan ratePlan = ratePlanDAO.getRatePlanWithServices(customer.getPlanId());
-
-                // Fetch free unit details
                 ServicePackage freeUnit = customerDAO.getFreeUnitDetails(customer.getFreeUnitId());
 
-                // Create InvoiceDetailsDTO
                 InvoiceDetailsDTO dto = new InvoiceDetailsDTO(invoice, customer, ratePlan, freeUnit);
                 invoiceDetailsList.add(dto);
             }
@@ -222,48 +191,37 @@ public class InvoiceDAO {
             throw e;
         }
     }
-    
-    public Invoice getInvoiceById(String invoiceId) throws SQLException {
-    String sql = "SELECT invoice_id, customer_id, invoice_date, ror_usage, subtotal, tax, total, created_at FROM invoices WHERE invoice_id = ?";
-    try (Connection conn = dbConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-        stmt.setString(1, invoiceId);
-        try (ResultSet rs = stmt.executeQuery()) {
-            if (rs.next()) {
-                Invoice invoice = new Invoice();
-                invoice.setInvoiceId(rs.getString("invoice_id"));
-                invoice.setCustomerId(rs.getInt("customer_id"));
-                invoice.setInvoiceDate(rs.getTimestamp("invoice_date"));
-                invoice.setRorUsage(rs.getBigDecimal("ror_usage"));
-                invoice.setSubtotal(rs.getBigDecimal("subtotal"));
-                invoice.setTax(rs.getBigDecimal("tax"));
-                invoice.setTotal(rs.getBigDecimal("total"));
-                invoice.setCreatedAt(rs.getTimestamp("created_at"));
-                return invoice;
-            }
-            return null;
-        }
-    } catch (SQLException e) {
-        LOGGER.severe("Error retrieving invoice with ID " + invoiceId + ": " + e.getMessage());
-        throw e;
-    }
-}
-    
-public BigDecimal getTotalRevenue() throws SQLException {
-    String sql = "SELECT SUM(total) AS total_revenue FROM invoices";
-    
-    try (Connection conn = dbConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql);
-         ResultSet rs = stmt.executeQuery()) {
-        
-        if (rs.next()) {
-            BigDecimal revenue = rs.getBigDecimal("total_revenue");
-            return revenue != null ? revenue : BigDecimal.ZERO;
-        }
-        return BigDecimal.ZERO;
-    } catch (SQLException e) {
-        LOGGER.severe("Error calculating total revenue: " + e.getMessage());
-        throw e;
-    }
-}
 
+    public Invoice getInvoiceById(String invoiceId) throws SQLException {
+        String sql = "SELECT invoice_id, customer_id, invoice_date, ror_usage, subtotal, tax, total, created_at FROM invoices WHERE invoice_id = ?";
+        try (Connection conn = dbConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, invoiceId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Invoice invoice = new Invoice();
+                    invoice.setInvoiceId(rs.getString("invoice_id"));
+                    invoice.setCustomerId(rs.getInt("customer_id"));
+                    invoice.setInvoiceDate(rs.getTimestamp("invoice_date"));
+                    invoice.setRorUsage(rs.getBigDecimal("ror_usage"));
+                    invoice.setSubtotal(rs.getBigDecimal("subtotal"));
+                    invoice.setTax(rs.getBigDecimal("tax"));
+                    invoice.setTotal(rs.getBigDecimal("total"));
+                    invoice.setCreatedAt(rs.getTimestamp("created_at"));
+                    return invoice;
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            LOGGER.severe("Error retrieving invoice with ID " + invoiceId + ": " + e.getMessage());
+            throw e;
+        }
+    }
+
+    public BigDecimal getTotalRevenue() throws SQLException {
+        List<Invoice> invoices = getAllInvoicesWithCustomerName();
+        return invoices.stream()
+                .map(Invoice::getTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, BigDecimal.ROUND_HALF_UP);
+    }
 }

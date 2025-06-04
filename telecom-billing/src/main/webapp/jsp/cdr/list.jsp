@@ -1,3 +1,4 @@
+
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ include file="../includes/header.jsp" %>
 
@@ -88,7 +89,7 @@
         </div>
     </div>
 
-    <!-- Modal for displaying file content -->
+    <!-- Modal for displaying file content or Python output -->
     <div class="modal fade" id="fileContentModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
@@ -188,51 +189,47 @@
             }
 
             // Clear all data (both localStorage and IndexedDB)
-             async function clearAllData() {
-    try {
-        // Send DELETE request to clear all invoices from the database
-        const response = await fetch('<%=request.getContextPath()%>/api/invoices', {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
+            async function clearAllData() {
+                try {
+                    const response = await fetch('<%=request.getContextPath()%>/api/invoices', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to delete invoices: ${response.statusText}`);
+                    }
+
+                    const result = await response.text();
+                    console.log(result);
+                } catch (error) {
+                    console.error('Error deleting invoices from database:', error);
+                    alert(`Error deleting invoices from database: ${error.message}. Local data will still be cleared.`);
+                }
+
+                localStorage.removeItem(STORAGE_KEY);
+
+                if (db) {
+                    const transaction = db.transaction(STORE_NAME, 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    const request = store.clear();
+
+                    request.onsuccess = function () {
+                        console.log("All data cleared from IndexedDB");
+                    };
+
+                    request.onerror = function (event) {
+                        console.error("Error clearing IndexedDB data:", event.target.error);
+                    };
+                }
+
+                uploadedFiles = [];
+                fileStatuses = {};
+                fileNames.textContent = 'No files chosen';
+                tableContainer.innerHTML = '<p class="no-data">No data to display. Please upload CSV files.</p>';
             }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to delete invoices: ${response.statusText}`);
-        }
-
-        const result = await response.text();
-        console.log(result); // e.g., "All invoices deleted successfully"
-    } catch (error) {
-        console.error('Error deleting invoices from database:', error);
-        alert(`Error deleting invoices from database: ${error.message}. Local data will still be cleared.`);
-    }
-
-    // Clear localStorage
-    localStorage.removeItem(STORAGE_KEY);
-
-    // Clear IndexedDB
-    if (db) {
-        const transaction = db.transaction(STORE_NAME, 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.clear();
-
-        request.onsuccess = function () {
-            console.log("All data cleared from IndexedDB");
-        };
-
-        request.onerror = function (event) {
-            console.error("Error clearing IndexedDB data:", event.target.error);
-        };
-    }
-
-    // Reset local state
-    uploadedFiles = [];
-    fileStatuses = {};
-    fileNames.textContent = 'No files chosen';
-    tableContainer.innerHTML = '<p class="no-data">No data to display. Please upload CSV files.</p>';
-}
 
             // Store file content in IndexedDB
             function storeFileContent(file) {
@@ -319,10 +316,8 @@
                 const newFiles = Array.from(e.target.files);
                 if (newFiles.length > 0) {
                     try {
-                        // Fetch customer IDs from API
                         const customerIds = await fetchCustomerData();
 
-                        // Validate and store valid files
                         const validFiles = [];
                         const invalidFiles = [];
 
@@ -434,6 +429,12 @@
                 processAllBtn.classList.add('btn', 'btn-warning', 'process-all-btn');
                 processAllBtn.addEventListener('click', processAllFiles);
                 buttonsDiv.appendChild(processAllBtn);
+//
+//                const runPythonBtn = document.createElement('button');
+//                runPythonBtn.textContent = 'Run Python Code';
+//                runPythonBtn.classList.add('btn', 'btn-info', 'ml-2');
+//                runPythonBtn.addEventListener('click', runPythonCode);
+//                buttonsDiv.appendChild(runPythonBtn);
 
                 if (Object.values(fileStatuses).every(status => status === 'Processed')) {
                     processAllBtn.textContent = 'All Processed';
@@ -522,7 +523,6 @@
                 processAllBtn.parentNode.appendChild(processingMessage);
 
                 try {
-                    // Build customer-CSV map
                     const customerCsvMap = {};
                     for (const file of uploadedFiles) {
                         const match = file.name.match(/^(\d+)_/);
@@ -538,7 +538,6 @@
                         return;
                     }
 
-                    // Send to backend
                     const response = await fetch('<%=request.getContextPath()%>/api/invoices/process-all', {
                         method: 'POST',
                         headers: {
@@ -553,12 +552,10 @@
                         const result = await response.text();
                         alert(result || 'Invoices processed successfully!');
 
-                        // Update file statuses
                         uploadedFiles.forEach(file => {
                             fileStatuses[file.name] = 'Processed';
                         });
 
-                        // Save and refresh table
                         saveData();
                         displayFilesTable();
                     } else {
@@ -578,6 +575,48 @@
                 }
             }
 
+            async function runPythonCode() {
+                const runPythonBtn = document.querySelector('.btn-info');
+                runPythonBtn.disabled = true;
+                runPythonBtn.textContent = 'Running...';
+
+                try {
+                    const customerCsvMap = {};
+                    for (const file of uploadedFiles) {
+                        const match = file.name.match(/^(\d+)_/);
+                        if (match) {
+                            const customerId = match[1];
+                            const csvContent = await getFileContent(file.name);
+                            customerCsvMap[customerId] = csvContent;
+                        }
+                    }
+
+                    const response = await fetch('<%=request.getContextPath()%>/api/run-python', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(customerCsvMap)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.text();
+                        document.getElementById('modalTitle').textContent = 'Python Script Output';
+                        document.getElementById('modalContent').innerHTML = `<pre>${result}</pre>`;
+                        $('#fileContentModal').modal('show');
+                    } else {
+                        const error = await response.text();
+                        alert(`Error running Python script: ${error}`);
+                    }
+                } catch (error) {
+                    console.error('Error running Python script:', error);
+                    alert(`Error running Python script: ${error.message}`);
+                } finally {
+                    runPythonBtn.textContent = 'Run Python Code';
+                    runPythonBtn.disabled = false;
+                }
+            }
+
             function formatFileSize(bytes) {
                 if (bytes === 0)
                     return '0 Bytes';
@@ -590,3 +629,4 @@
     </script>
 
     <%@ include file="../includes/footer.jsp" %>
+

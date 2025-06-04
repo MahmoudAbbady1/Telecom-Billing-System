@@ -208,9 +208,9 @@ public class DownloadInvoiceServlet extends HttpServlet {
             ).setTextAlignment(TextAlignment.CENTER));
 
             table.addCell(new Cell().add(new Paragraph("Promotion Package:").setFont(boldFont)));
+            table.addCell(new Paragraph("").setTextAlignment(TextAlignment.CENTER));
             table.addCell(new Paragraph(invoiceData.getCustomer() != null && invoiceData.getCustomer().getPromotionPackage() != 0
-                    ? invoiceData.getCustomer().getPromotionPackage() + "%" : "0.00"));
-            table.addCell(new Paragraph("0.00").setTextAlignment(TextAlignment.CENTER));
+                    ? invoiceData.getCustomer().getPromotionPackage() + "" : "0.00").setTextAlignment(TextAlignment.CENTER));
 
             table.addCell(new Cell().add(new Paragraph("Total:").setFont(boldFont)));
             table.addCell(new Paragraph(String.format("%.2f", invoiceData.getInvoice().getTotal())));

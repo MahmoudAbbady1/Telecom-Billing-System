@@ -69,7 +69,7 @@
         <servlet-name>InvoiceServlet</servlet-name>
         <url-pattern>/invoices/*</url-pattern>
     </servlet-mapping>
-    <!-- Session Configuration -->
+   
     <servlet-mapping>
         <servlet-name>DownloadInvoiceServlet</servlet-name>
         <url-pattern>/DownloadInvoiceServlet</url-pattern>

@@ -107,7 +107,7 @@
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet</artifactId>
             <version>${jersey.version}</version>
-            <!-- Removed exclusion of jersey-core since it's needed -->
+          
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.inject</groupId>
